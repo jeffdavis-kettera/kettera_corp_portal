@@ -2,6 +2,13 @@
 .env
 .env.*
 !.env.example
+# .env.production is committed on purpose. It contains only Vite
+# build-time VITE_* values, which are baked into the client bundle
+# and are therefore public by design (Firebase client config, API
+# URL). Real secrets (SQL password, Firebase Admin service-account
+# JSON) live in Azure App Service Configuration on the API side,
+# NEVER in this repo. See kettera_implementation_plans/kettera-corp-portal.md.
+!.env.production
 secrets/
 *.key
 *.pem
