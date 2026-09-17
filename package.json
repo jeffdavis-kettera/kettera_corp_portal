@@ -1,0 +1,21 @@
+{
+  "name": "kettera_corp_portal",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "description": "Kettera Corp Portal — React SPA. See kettera_implementation_plans/kettera-corp-portal.md for the roadmap. This early scaffolding renders a placeholder page so Azure Static Web Apps can produce a real dist/; real routes and auth land in Phase 3 proper.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "react-router-dom": "^7.9.4"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^5.0.4",
+    "vite": "^7.1.7"
+  }
+}
