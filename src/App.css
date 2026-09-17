@@ -391,3 +391,185 @@ h1, h2, h3, h4 {
   border: 1px dashed var(--color-border);
   border-radius: var(--radius-md);
 }
+
+/* ── Data table (Users list, module role editor) ────────────── */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+}
+
+.data-table th,
+.data-table td {
+  padding: var(--space-3) var(--space-4);
+  text-align: left;
+  border-bottom: 1px solid var(--color-border);
+  vertical-align: middle;
+}
+
+.data-table thead th {
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  background: var(--color-bg-alt);
+  text-transform: uppercase;
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.data-table tbody tr:last-child td { border-bottom: none; }
+
+.data-table__row-clickable {
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+.data-table__row-clickable:hover {
+  background: var(--color-accent-tint);
+}
+
+/* ── Filter bar (search input above a list) ────────────────── */
+.filter-bar {
+  margin-bottom: var(--space-4);
+}
+
+.filter-input {
+  width: 100%;
+  max-width: 400px;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-base);
+  font-family: inherit;
+  background: var(--color-surface);
+  color: var(--color-text);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+.filter-input:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: var(--shadow-focus);
+}
+
+/* ── Badges (role, status) ─────────────────────────────────── */
+.role-badge,
+.status-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.role-badge--admin {
+  background: var(--color-accent-tint);
+  color: var(--color-accent-dark);
+}
+.role-badge--basic {
+  background: var(--color-bg-alt);
+  color: var(--color-text-secondary);
+}
+.status-badge--active {
+  background: rgba(22, 163, 74, 0.14);
+  color: var(--color-success);
+}
+.status-badge--suspended {
+  background: rgba(217, 119, 6, 0.14);
+  color: var(--color-warning);
+}
+
+/* ── Pagination controls ───────────────────────────────────── */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: var(--space-5);
+  padding: var(--space-3) 0;
+}
+.pagination__label {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+/* ── Candidate list (Add User step 1) ───────────────────────── */
+.candidate-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.candidate-list__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  width: 100%;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  text-align: left;
+  font-family: inherit;
+  font-size: var(--font-size-base);
+  color: var(--color-text);
+  cursor: pointer;
+  transition: border-color var(--transition-fast), background var(--transition-fast);
+}
+.candidate-list__item:hover {
+  border-color: var(--color-accent);
+  background: var(--color-accent-tint);
+}
+.candidate-list__name {
+  font-weight: 600;
+  min-width: 200px;
+}
+.candidate-list__email {
+  color: var(--color-text-secondary);
+  flex: 1;
+}
+
+/* ── Static field (read-only key/value display inside a form) ── */
+.static-field {
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-bg-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+}
+.static-field code {
+  font-family: 'SF Mono', Consolas, Menlo, monospace;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+/* ── Info banner (inline advisory inside a form) ────────────── */
+.info-banner {
+  background: var(--color-accent-tint);
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-accent);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  margin-bottom: var(--space-4);
+}
+
+/* ── Muted (—, no display name, small hints) ────────────────── */
+.muted { color: var(--color-text-muted); }
+
+/* ── Link-styled button (inline "pick someone else") ────────── */
+.link-button {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--color-accent);
+  text-decoration: underline;
+  cursor: pointer;
+  font: inherit;
+}
+.link-button:hover { color: var(--color-accent-dark); }
+.link-button:disabled { color: var(--color-text-muted); cursor: not-allowed; text-decoration: none; }

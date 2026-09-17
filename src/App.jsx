@@ -18,6 +18,9 @@ import Login from './components/Login.jsx';
 import AccessDenied from './components/AccessDenied.jsx';
 import Dashboard from './components/Dashboard.jsx';
 import Placeholder from './components/Placeholder.jsx';
+import Users from './components/Users.jsx';
+import UserDetail from './components/UserDetail.jsx';
+import AddUser from './components/AddUser.jsx';
 
 export default function App() {
   return (
@@ -34,43 +37,20 @@ export default function App() {
         element={<ProtectedRoute><Dashboard /></ProtectedRoute>}
       />
 
-      {/* Phase 4 lands the real screens; scaffolding for now so
-          links from the sidebar don't 404. */}
+      {/* User Management (Phase 4). All three components additionally
+          guard themselves on isAppAdmin — the sidebar link is only
+          shown to Admins, but a stray URL redirects to /dashboard. */}
       <Route
         path="/users"
-        element={
-          <ProtectedRoute>
-            <Placeholder
-              title="User Management"
-              phase="4"
-              message="The user list, detail view, and Add User flow arrive in Phase 4."
-            />
-          </ProtectedRoute>
-        }
+        element={<ProtectedRoute><Users /></ProtectedRoute>}
       />
       <Route
         path="/users/add"
-        element={
-          <ProtectedRoute>
-            <Placeholder
-              title="Add User"
-              phase="4"
-              message="The Firebase-search-based Add User flow arrives in Phase 4."
-            />
-          </ProtectedRoute>
-        }
+        element={<ProtectedRoute><AddUser /></ProtectedRoute>}
       />
       <Route
         path="/users/:id"
-        element={
-          <ProtectedRoute>
-            <Placeholder
-              title="User Detail"
-              phase="4"
-              message="Per-user editing and role assignment arrives in Phase 4."
-            />
-          </ProtectedRoute>
-        }
+        element={<ProtectedRoute><UserDetail /></ProtectedRoute>}
       />
 
       <Route
