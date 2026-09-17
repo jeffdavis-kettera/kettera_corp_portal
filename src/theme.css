@@ -13,11 +13,29 @@
 :root {
   /* ── Colors (light) ────────────────────────────────────────── */
   --color-accent: #3b82f6;         /* primary blue */
-  --color-accent-dark: #1e3a8a;    /* dark navy for hover / headings */
+  --color-accent-dark: #1e3a8a;    /* dark navy — used as HOVER background on buttons */
+  --color-accent-text: #1e3a8a;    /* accent-colored TEXT (headings, badges).
+                                       Split from --color-accent-dark so dark mode
+                                       can flip it light without lightening the
+                                       button hover. */
   --color-accent-tint: #eff6ff;    /* subtle blue tint for banners */
   --color-danger: #dc2626;
   --color-warning: #d97706;
   --color-success: #16a34a;
+
+  /* Semantic backgrounds + text for danger/success/warning banners.
+     Split so dark mode can strengthen the tint (nearly-invisible at
+     8% on a dark ground) and lighten the text (dark red on dark
+     navy is only ~3.5:1). */
+  --color-danger-bg:  rgba(220, 38, 38, 0.08);
+  --color-danger-brd: rgba(220, 38, 38, 0.35);
+  --color-danger-tx:  #dc2626;
+  --color-success-bg:  rgba(22, 163, 74, 0.08);
+  --color-success-brd: rgba(22, 163, 74, 0.35);
+  --color-success-tx:  #16a34a;
+  --color-warning-bg:  rgba(217, 119, 6, 0.08);
+  --color-warning-brd: rgba(217, 119, 6, 0.35);
+  --color-warning-tx:  #d97706;
 
   --color-bg: #f8fafc;             /* page body */
   --color-bg-alt: #f1f5f9;         /* subtle contrast (inputs disabled) */
@@ -61,7 +79,12 @@
 }
 
 /* System-preference dark mode. Never used as the ONLY definition —
-   every token still has a light default on :root above. */
+   every token still has a light default on :root above.
+
+   Accent-text flips to a LIGHT blue so headings/badges stay legible
+   on the dark surface; accent-dark stays deep so button hovers still
+   darken visibly under white text. accent-tint's opacity bumps up so
+   badge backgrounds don't disappear against the dark ground. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --color-bg: #0f172a;
@@ -69,11 +92,21 @@
     --color-bg-subtle: #1e293b;
     --color-surface: #1e293b;
     --color-text: #f1f5f9;
-    --color-text-secondary: #94a3b8;
-    --color-text-muted: #64748b;
+    --color-text-secondary: #cbd5e1;
+    --color-text-muted: #94a3b8;
     --color-border: #334155;
     --color-border-strong: #475569;
-    --color-accent-tint: rgba(59, 130, 246, 0.12);
+    --color-accent-text: #bfdbfe;
+    --color-accent-tint: rgba(96, 165, 250, 0.18);
+    --color-danger-bg:  rgba(248, 113, 113, 0.15);
+    --color-danger-brd: rgba(248, 113, 113, 0.55);
+    --color-danger-tx:  #fca5a5;
+    --color-success-bg:  rgba(74, 222, 128, 0.14);
+    --color-success-brd: rgba(74, 222, 128, 0.55);
+    --color-success-tx:  #86efac;
+    --color-warning-bg:  rgba(251, 191, 36, 0.14);
+    --color-warning-brd: rgba(251, 191, 36, 0.55);
+    --color-warning-tx:  #fcd34d;
     color-scheme: dark;
   }
 }
@@ -85,10 +118,20 @@
   --color-bg-subtle: #1e293b;
   --color-surface: #1e293b;
   --color-text: #f1f5f9;
-  --color-text-secondary: #94a3b8;
-  --color-text-muted: #64748b;
+  --color-text-secondary: #cbd5e1;
+  --color-text-muted: #94a3b8;
   --color-border: #334155;
   --color-border-strong: #475569;
-  --color-accent-tint: rgba(59, 130, 246, 0.12);
+  --color-accent-text: #bfdbfe;
+  --color-accent-tint: rgba(96, 165, 250, 0.18);
+  --color-danger-bg:  rgba(248, 113, 113, 0.15);
+  --color-danger-brd: rgba(248, 113, 113, 0.55);
+  --color-danger-tx:  #fca5a5;
+  --color-success-bg:  rgba(74, 222, 128, 0.14);
+  --color-success-brd: rgba(74, 222, 128, 0.55);
+  --color-success-tx:  #86efac;
+  --color-warning-bg:  rgba(251, 191, 36, 0.14);
+  --color-warning-brd: rgba(251, 191, 36, 0.55);
+  --color-warning-tx:  #fcd34d;
   color-scheme: dark;
 }

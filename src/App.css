@@ -95,7 +95,7 @@ h1, h2, h3, h4 {
 
 .nav__brand-title {
   margin: 0;
-  color: var(--color-accent-dark);
+  color: var(--color-accent-text);
   font-size: var(--font-size-lg);
   font-weight: 700;
   letter-spacing: -0.02em;
@@ -140,7 +140,7 @@ h1, h2, h3, h4 {
 }
 .nav__link.is-active {
   background: var(--color-accent-tint);
-  color: var(--color-accent-dark);
+  color: var(--color-accent-text);
   font-weight: 600;
   border-left: 3px solid var(--color-accent);
   padding-left: calc(var(--space-5) - 3px);
@@ -290,9 +290,9 @@ h1, h2, h3, h4 {
 
 /* ── Status blocks ──────────────────────────────────────────── */
 .error-message {
-  background: rgba(220, 38, 38, 0.08);
-  border: 1px solid rgba(220, 38, 38, 0.35);
-  color: var(--color-danger);
+  background: var(--color-danger-bg);
+  border: 1px solid var(--color-danger-brd);
+  color: var(--color-danger-tx);
   padding: var(--space-3) var(--space-4);
   border-radius: var(--radius-md);
   margin: 0 0 var(--space-4);
@@ -300,9 +300,9 @@ h1, h2, h3, h4 {
 .error-message p { margin: 0; }
 
 .success-message {
-  background: rgba(22, 163, 74, 0.08);
-  border: 1px solid rgba(22, 163, 74, 0.35);
-  color: var(--color-success);
+  background: var(--color-success-bg);
+  border: 1px solid var(--color-success-brd);
+  color: var(--color-success-tx);
   padding: var(--space-3) var(--space-4);
   border-radius: var(--radius-md);
   margin: 0 0 var(--space-4);
@@ -341,7 +341,7 @@ h1, h2, h3, h4 {
 }
 
 .public-card__brand {
-  color: var(--color-accent-dark);
+  color: var(--color-accent-text);
   font-size: var(--font-size-2xl);
   font-weight: 700;
   margin: 0 0 var(--space-2);
@@ -369,7 +369,7 @@ h1, h2, h3, h4 {
 }
 .module-card h3 {
   margin: 0 0 var(--space-2);
-  color: var(--color-accent-dark);
+  color: var(--color-accent-text);
   font-size: var(--font-size-lg);
 }
 .module-card__role {
@@ -377,7 +377,7 @@ h1, h2, h3, h4 {
   padding: 2px 8px;
   border-radius: 999px;
   background: var(--color-accent-tint);
-  color: var(--color-accent-dark);
+  color: var(--color-accent-text);
   font-size: var(--font-size-xs);
   font-weight: 600;
   text-transform: uppercase;
@@ -463,19 +463,19 @@ h1, h2, h3, h4 {
 }
 .role-badge--admin {
   background: var(--color-accent-tint);
-  color: var(--color-accent-dark);
+  color: var(--color-accent-text);
 }
 .role-badge--basic {
   background: var(--color-bg-alt);
   color: var(--color-text-secondary);
 }
 .status-badge--active {
-  background: rgba(22, 163, 74, 0.14);
-  color: var(--color-success);
+  background: var(--color-success-bg);
+  color: var(--color-success-tx);
 }
 .status-badge--suspended {
-  background: rgba(217, 119, 6, 0.14);
-  color: var(--color-warning);
+  background: var(--color-warning-bg);
+  color: var(--color-warning-tx);
 }
 
 /* ── Pagination controls ───────────────────────────────────── */
@@ -571,5 +571,5 @@ h1, h2, h3, h4 {
   cursor: pointer;
   font: inherit;
 }
-.link-button:hover { color: var(--color-accent-dark); }
+.link-button:hover { color: var(--color-accent-text); }
 .link-button:disabled { color: var(--color-text-muted); cursor: not-allowed; text-decoration: none; }

@@ -217,7 +217,7 @@ export default function UserDetail() {
           onClick={handleDelete}
           disabled={deleting || isSelf}
           title={isSelf ? "You can't delete your own portal user." : ''}
-          style={{ color: 'var(--color-danger)', borderColor: 'var(--color-danger)' }}
+          style={{ color: 'var(--color-danger-tx)', borderColor: 'var(--color-danger-tx)' }}
         >
           {deleting ? 'Deleting…' : 'Delete User'}
         </button>
