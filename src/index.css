@@ -1,62 +1,7 @@
-/* Kettera Corp Portal — placeholder styles.
-   Full theme (matching Navigator's look) lands in Phase 3. */
+/* Kettera Corp Portal — root stylesheet.
+   Bootstraps the design tokens then the base styles. Nothing else
+   should be imported here; components pull from theme tokens
+   directly via var(--...) references. */
 
-:root {
-  --color-accent: #1e3a8a;
-  --color-bg: #f8fafc;
-  --color-surface: #ffffff;
-  --color-text: #0f172a;
-  --color-text-secondary: #64748b;
-  --color-border: #e2e8f0;
-  color-scheme: light;
-}
-
-* {
-  box-sizing: border-box;
-}
-
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
-    Ubuntu, Cantarell, sans-serif;
-  background: var(--color-bg);
-  color: var(--color-text);
-  -webkit-font-smoothing: antialiased;
-}
-
-.placeholder {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2rem;
-}
-
-.placeholder__card {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 12px;
-  padding: 2.5rem 3rem;
-  max-width: 480px;
-  text-align: center;
-  box-shadow: 0 4px 24px rgba(15, 23, 42, 0.06);
-}
-
-.placeholder__card h1 {
-  margin: 0 0 0.5rem;
-  color: var(--color-accent);
-  font-size: 1.75rem;
-}
-
-.placeholder__subtitle {
-  margin: 0 0 1.5rem;
-  color: var(--color-text-secondary);
-  font-size: 1rem;
-}
-
-.placeholder__note {
-  margin: 0;
-  color: var(--color-text-secondary);
-  font-size: 0.875rem;
-  font-style: italic;
-}
+@import './theme.css';
+@import './App.css';
