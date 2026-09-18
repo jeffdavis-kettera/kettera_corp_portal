@@ -66,9 +66,6 @@ export default function Companies() {
       title="CRM — Companies"
       actions={isCrmAdmin ? (
         <>
-          <button type="button" className="cancel-button" onClick={() => navigate('/modules/crm/users')}>
-            Users
-          </button>
           <button type="button" className="cancel-button" onClick={() => navigate('/modules/crm/config')}>
             Configuration
           </button>

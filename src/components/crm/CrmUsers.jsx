@@ -117,13 +117,22 @@ export default function CrmUsers() {
     <PageLayout
       title="CRM — Users"
       actions={
-        <button
-          type="button"
-          className="btn-primary"
-          onClick={() => navigate('/modules/crm/users/add')}
-        >
-          Add User
-        </button>
+        <>
+          <button
+            type="button"
+            className="cancel-button"
+            onClick={() => navigate('/modules/crm/config')}
+          >
+            Back to Configuration
+          </button>
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={() => navigate('/modules/crm/users/add')}
+          >
+            Add User
+          </button>
+        </>
       }
     >
       <p style={{ color: 'var(--color-text-secondary)', marginTop: 0 }}>

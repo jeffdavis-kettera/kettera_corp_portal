@@ -27,6 +27,22 @@ export default function CrmConfig() {
         <button
           type="button"
           className="module-card module-card--link"
+          onClick={() => navigate('/modules/crm/users')}
+          style={{ textAlign: 'left', cursor: 'pointer', font: 'inherit' }}
+        >
+          <h3>User Management</h3>
+          <p style={{ color: 'var(--color-text-secondary)', margin: '0 0 var(--space-2)' }}>
+            Grant existing portal users access to the CRM module, change their
+            CRM role (Admin / Basic User), or remove them from CRM. Users must
+            already exist at the app level — module admins cannot invite new
+            people to Corp Portal.
+          </p>
+          <span className="module-card__role">Admin only</span>
+        </button>
+
+        <button
+          type="button"
+          className="module-card module-card--link"
           onClick={() => navigate('/modules/crm/config/company-access')}
           style={{ textAlign: 'left', cursor: 'pointer', font: 'inherit' }}
         >
