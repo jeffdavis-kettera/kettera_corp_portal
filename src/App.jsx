@@ -28,6 +28,9 @@ import CompanyOverview from './components/crm/CompanyOverview.jsx';
 import CompanyContacts from './components/crm/CompanyContacts.jsx';
 import CompanyOpportunities from './components/crm/CompanyOpportunities.jsx';
 import CompanyActivity from './components/crm/CompanyActivity.jsx';
+import CompanyDocuments from './components/crm/CompanyDocuments.jsx';
+import DocumentUploadForm from './components/crm/DocumentUploadForm.jsx';
+import DocumentDetail from './components/crm/DocumentDetail.jsx';
 import AddContact from './components/crm/AddContact.jsx';
 import ContactDetail from './components/crm/ContactDetail.jsx';
 import CrmConfig from './components/crm/CrmConfig.jsx';
@@ -106,6 +109,7 @@ export default function App() {
         <Route path="contacts" element={<CompanyContacts />} />
         <Route path="opportunities" element={<CompanyOpportunities />} />
         <Route path="activities" element={<CompanyActivity />} />
+        <Route path="documents" element={<CompanyDocuments />} />
       </Route>
 
       {/* Forms + drill-in detail pages live OUTSIDE the tab shell
@@ -134,6 +138,14 @@ export default function App() {
       <Route
         path="/modules/crm/companies/:id/activities/:activityId"
         element={<ProtectedRoute><ActivityForm /></ProtectedRoute>}
+      />
+      <Route
+        path="/modules/crm/companies/:id/documents/upload"
+        element={<ProtectedRoute><DocumentUploadForm /></ProtectedRoute>}
+      />
+      <Route
+        path="/modules/crm/companies/:id/documents/:docId"
+        element={<ProtectedRoute><DocumentDetail /></ProtectedRoute>}
       />
 
       <Route

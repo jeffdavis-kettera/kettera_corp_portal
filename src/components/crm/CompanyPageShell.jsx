@@ -106,6 +106,7 @@ export default function CompanyPageShell() {
         <NavLink to={`${tabBase}/contacts`} className={tabClass}>Contacts</NavLink>
         <NavLink to={`${tabBase}/opportunities`} className={tabClass}>Opportunities</NavLink>
         <NavLink to={`${tabBase}/activities`} className={tabClass}>Activity</NavLink>
+        <NavLink to={`${tabBase}/documents`} className={tabClass}>Documents</NavLink>
       </nav>
 
       {deleteError && <div className="error-message"><p>{deleteError}</p></div>}

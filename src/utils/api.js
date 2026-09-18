@@ -54,12 +54,16 @@ async function throwFromResponse(res) {
 export async function authenticatedFetchJson(url, options = {}) {
   const method = options.method || 'GET';
   const hasBody = options.body !== undefined && options.body !== null;
+  const isFormData = hasBody && options.body instanceof FormData;
+  // For FormData the browser sets Content-Type (with the multipart
+  // boundary) itself; forcing application/json here would break the
+  // upload. Only JSON bodies get an explicit Content-Type from us.
   const headers = await buildHeaders({
-    ...(hasBody ? { 'Content-Type': 'application/json' } : {}),
+    ...(hasBody && !isFormData ? { 'Content-Type': 'application/json' } : {}),
     ...(options.headers || {}),
   });
   const init = { ...options, method, headers };
-  if (hasBody && typeof options.body !== 'string' && !(options.body instanceof FormData)) {
+  if (hasBody && typeof options.body !== 'string' && !isFormData) {
     init.body = JSON.stringify(options.body);
   }
   const res = await fetch(url, init);
