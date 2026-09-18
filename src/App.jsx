@@ -21,6 +21,13 @@ import Placeholder from './components/Placeholder.jsx';
 import Users from './components/Users.jsx';
 import UserDetail from './components/UserDetail.jsx';
 import AddUser from './components/AddUser.jsx';
+import Companies from './components/crm/Companies.jsx';
+import AddCompany from './components/crm/AddCompany.jsx';
+import CompanyDetail from './components/crm/CompanyDetail.jsx';
+import AddContact from './components/crm/AddContact.jsx';
+import ContactDetail from './components/crm/ContactDetail.jsx';
+import CrmConfig from './components/crm/CrmConfig.jsx';
+import CompanyAccess from './components/crm/CompanyAccess.jsx';
 
 export default function App() {
   return (
@@ -53,6 +60,37 @@ export default function App() {
         element={<ProtectedRoute><UserDetail /></ProtectedRoute>}
       />
 
+      {/* CRM module (real routes — MUST come before /modules/:code
+          catch-all below, or the Placeholder swallows them). */}
+      <Route
+        path="/modules/crm"
+        element={<ProtectedRoute><Companies /></ProtectedRoute>}
+      />
+      <Route
+        path="/modules/crm/companies/add"
+        element={<ProtectedRoute><AddCompany /></ProtectedRoute>}
+      />
+      <Route
+        path="/modules/crm/companies/:id"
+        element={<ProtectedRoute><CompanyDetail /></ProtectedRoute>}
+      />
+      <Route
+        path="/modules/crm/companies/:id/contacts/add"
+        element={<ProtectedRoute><AddContact /></ProtectedRoute>}
+      />
+      <Route
+        path="/modules/crm/companies/:id/contacts/:contactId"
+        element={<ProtectedRoute><ContactDetail /></ProtectedRoute>}
+      />
+      <Route
+        path="/modules/crm/config"
+        element={<ProtectedRoute><CrmConfig /></ProtectedRoute>}
+      />
+      <Route
+        path="/modules/crm/config/company-access"
+        element={<ProtectedRoute><CompanyAccess /></ProtectedRoute>}
+      />
+
       <Route
         path="/modules/:code"
         element={
@@ -60,7 +98,7 @@ export default function App() {
             <Placeholder
               title="Module"
               phase="later"
-              message="Individual modules (CRM, Project Management, Timekeeping, ...) each get their own implementation plan."
+              message="Individual modules (Project Management, Timekeeping, Accounting, ...) each get their own implementation plan."
             />
           </ProtectedRoute>
         }
