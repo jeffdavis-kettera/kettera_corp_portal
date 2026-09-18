@@ -7,6 +7,7 @@ import PageCard from '../PageCard.jsx';
 import FormActions from '../FormActions.jsx';
 import { API_BASE_URL } from '../../utils/config.js';
 import { authenticatedFetchJson, authenticatedFetch } from '../../utils/api.js';
+import ActivityInline from './ActivityInline.jsx';
 
 export default function ContactDetail() {
   const { id: companyId, contactId } = useParams();
@@ -202,6 +203,10 @@ export default function ContactDetail() {
           />
         </form>
       </PageCard>
+
+      {/* Contact-scoped activity — just this contact's rows. Company
+          rollup lives on the company detail page. */}
+      <ActivityInline companyId={companyId} contactId={Number(contactId)} />
     </PageLayout>
   );
 }

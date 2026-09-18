@@ -15,6 +15,7 @@ import FormActions from '../FormActions.jsx';
 import { API_BASE_URL } from '../../utils/config.js';
 import { authenticatedFetchJson, authenticatedFetch } from '../../utils/api.js';
 import { useCrmRole } from './useCrmRole.js';
+import ActivityInline from './ActivityInline.jsx';
 
 const TYPE_BADGE_CLASS = {
   General: 'role-badge role-badge--basic',
@@ -217,6 +218,10 @@ export default function CompanyDetail() {
           </table>
         </div>
       )}
+
+      {/* Company-level activity rollup — all activity under this
+          company, including activity logged at contact level. */}
+      <ActivityInline companyId={id} />
     </PageLayout>
   );
 }

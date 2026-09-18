@@ -30,6 +30,8 @@ import CrmConfig from './components/crm/CrmConfig.jsx';
 import CompanyAccess from './components/crm/CompanyAccess.jsx';
 import CrmUsers from './components/crm/CrmUsers.jsx';
 import AddCrmUser from './components/crm/AddCrmUser.jsx';
+import CompanyActivity from './components/crm/CompanyActivity.jsx';
+import ActivityForm from './components/crm/ActivityForm.jsx';
 
 export default function App() {
   return (
@@ -102,6 +104,22 @@ export default function App() {
       <Route
         path="/modules/crm/users/add"
         element={<ProtectedRoute><AddCrmUser /></ProtectedRoute>}
+      />
+
+      {/* CRM activity — full page + log/edit form. The /new
+          static path is declared before /:activityId so route
+          matching gets the specific pattern first. */}
+      <Route
+        path="/modules/crm/companies/:id/activities"
+        element={<ProtectedRoute><CompanyActivity /></ProtectedRoute>}
+      />
+      <Route
+        path="/modules/crm/companies/:id/activities/new"
+        element={<ProtectedRoute><ActivityForm /></ProtectedRoute>}
+      />
+      <Route
+        path="/modules/crm/companies/:id/activities/:activityId"
+        element={<ProtectedRoute><ActivityForm /></ProtectedRoute>}
       />
 
       <Route
