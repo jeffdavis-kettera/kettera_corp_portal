@@ -28,6 +28,8 @@ import AddContact from './components/crm/AddContact.jsx';
 import ContactDetail from './components/crm/ContactDetail.jsx';
 import CrmConfig from './components/crm/CrmConfig.jsx';
 import CompanyAccess from './components/crm/CompanyAccess.jsx';
+import CrmUsers from './components/crm/CrmUsers.jsx';
+import AddCrmUser from './components/crm/AddCrmUser.jsx';
 
 export default function App() {
   return (
@@ -89,6 +91,17 @@ export default function App() {
       <Route
         path="/modules/crm/config/company-access"
         element={<ProtectedRoute><CompanyAccess /></ProtectedRoute>}
+      />
+
+      {/* CRM module-user management. Admin-only surfaces guarded
+          inside each component via useCrmRole. */}
+      <Route
+        path="/modules/crm/users"
+        element={<ProtectedRoute><CrmUsers /></ProtectedRoute>}
+      />
+      <Route
+        path="/modules/crm/users/add"
+        element={<ProtectedRoute><AddCrmUser /></ProtectedRoute>}
       />
 
       <Route
