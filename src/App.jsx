@@ -7,7 +7,7 @@
 // Protected routes (require Firebase auth + portal_user row):
 //   /              — redirects to /dashboard
 //   /dashboard     — welcome + module cards
-//   /users, /users/:id, /users/add — User Management (Phase 4)
+//   /users, /users/:id, /users/add — User Management
 //   /modules/:code — per-module dashboards (later phases)
 //
 // Catch-all → redirect signed-in users to /dashboard, unauth'd to /login.
@@ -23,16 +23,18 @@ import UserDetail from './components/UserDetail.jsx';
 import AddUser from './components/AddUser.jsx';
 import Companies from './components/crm/Companies.jsx';
 import AddCompany from './components/crm/AddCompany.jsx';
-import CompanyDetail from './components/crm/CompanyDetail.jsx';
+import CompanyPageShell from './components/crm/CompanyPageShell.jsx';
+import CompanyOverview from './components/crm/CompanyOverview.jsx';
+import CompanyContacts from './components/crm/CompanyContacts.jsx';
+import CompanyOpportunities from './components/crm/CompanyOpportunities.jsx';
+import CompanyActivity from './components/crm/CompanyActivity.jsx';
 import AddContact from './components/crm/AddContact.jsx';
 import ContactDetail from './components/crm/ContactDetail.jsx';
 import CrmConfig from './components/crm/CrmConfig.jsx';
 import CompanyAccess from './components/crm/CompanyAccess.jsx';
 import CrmUsers from './components/crm/CrmUsers.jsx';
 import AddCrmUser from './components/crm/AddCrmUser.jsx';
-import CompanyActivity from './components/crm/CompanyActivity.jsx';
 import ActivityForm from './components/crm/ActivityForm.jsx';
-import CompanyOpportunities from './components/crm/CompanyOpportunities.jsx';
 import OpportunityForm from './components/crm/OpportunityForm.jsx';
 
 export default function App() {
@@ -50,9 +52,7 @@ export default function App() {
         element={<ProtectedRoute><Dashboard /></ProtectedRoute>}
       />
 
-      {/* User Management (Phase 4). All three components additionally
-          guard themselves on isAppAdmin — the sidebar link is only
-          shown to Admins, but a stray URL redirects to /dashboard. */}
+      {/* User Management */}
       <Route
         path="/users"
         element={<ProtectedRoute><Users /></ProtectedRoute>}
@@ -66,8 +66,7 @@ export default function App() {
         element={<ProtectedRoute><UserDetail /></ProtectedRoute>}
       />
 
-      {/* CRM module (real routes — MUST come before /modules/:code
-          catch-all below, or the Placeholder swallows them). */}
+      {/* CRM — company list + Add + Config + module-user management */}
       <Route
         path="/modules/crm"
         element={<ProtectedRoute><Companies /></ProtectedRoute>}
@@ -77,18 +76,6 @@ export default function App() {
         element={<ProtectedRoute><AddCompany /></ProtectedRoute>}
       />
       <Route
-        path="/modules/crm/companies/:id"
-        element={<ProtectedRoute><CompanyDetail /></ProtectedRoute>}
-      />
-      <Route
-        path="/modules/crm/companies/:id/contacts/add"
-        element={<ProtectedRoute><AddContact /></ProtectedRoute>}
-      />
-      <Route
-        path="/modules/crm/companies/:id/contacts/:contactId"
-        element={<ProtectedRoute><ContactDetail /></ProtectedRoute>}
-      />
-      <Route
         path="/modules/crm/config"
         element={<ProtectedRoute><CrmConfig /></ProtectedRoute>}
       />
@@ -96,9 +83,6 @@ export default function App() {
         path="/modules/crm/config/company-access"
         element={<ProtectedRoute><CompanyAccess /></ProtectedRoute>}
       />
-
-      {/* CRM module-user management. Admin-only surfaces guarded
-          inside each component via useCrmRole. */}
       <Route
         path="/modules/crm/users"
         element={<ProtectedRoute><CrmUsers /></ProtectedRoute>}
@@ -108,27 +92,32 @@ export default function App() {
         element={<ProtectedRoute><AddCrmUser /></ProtectedRoute>}
       />
 
-      {/* CRM activity — full page + log/edit form. The /new
-          static path is declared before /:activityId so route
-          matching gets the specific pattern first. */}
+      {/* Company detail — nested tab shell.
+          The parent element (CompanyPageShell) renders PageLayout,
+          the sticky tab strip, and an <Outlet /> for the tab body.
+          Nested children ARE the tab bodies — they render inside
+          the shell via <Outlet /> and get the loaded company via
+          useOutletContext, no re-fetching per tab switch. */}
       <Route
-        path="/modules/crm/companies/:id/activities"
-        element={<ProtectedRoute><CompanyActivity /></ProtectedRoute>}
-      />
-      <Route
-        path="/modules/crm/companies/:id/activities/new"
-        element={<ProtectedRoute><ActivityForm /></ProtectedRoute>}
-      />
-      <Route
-        path="/modules/crm/companies/:id/activities/:activityId"
-        element={<ProtectedRoute><ActivityForm /></ProtectedRoute>}
-      />
+        path="/modules/crm/companies/:id"
+        element={<ProtectedRoute><CompanyPageShell /></ProtectedRoute>}
+      >
+        <Route index element={<CompanyOverview />} />
+        <Route path="contacts" element={<CompanyContacts />} />
+        <Route path="opportunities" element={<CompanyOpportunities />} />
+        <Route path="activities" element={<CompanyActivity />} />
+      </Route>
 
-      {/* CRM opportunities. Same static-before-param ordering as
-          activities so /new isn't matched as an :oppId. */}
+      {/* Forms + drill-in detail pages live OUTSIDE the tab shell
+          so they get their own focused PageLayout. Save/Cancel
+          routes back to whichever tab is contextually right. */}
       <Route
-        path="/modules/crm/companies/:id/opportunities"
-        element={<ProtectedRoute><CompanyOpportunities /></ProtectedRoute>}
+        path="/modules/crm/companies/:id/contacts/add"
+        element={<ProtectedRoute><AddContact /></ProtectedRoute>}
+      />
+      <Route
+        path="/modules/crm/companies/:id/contacts/:contactId"
+        element={<ProtectedRoute><ContactDetail /></ProtectedRoute>}
       />
       <Route
         path="/modules/crm/companies/:id/opportunities/new"
@@ -137,6 +126,14 @@ export default function App() {
       <Route
         path="/modules/crm/companies/:id/opportunities/:oppId"
         element={<ProtectedRoute><OpportunityForm /></ProtectedRoute>}
+      />
+      <Route
+        path="/modules/crm/companies/:id/activities/new"
+        element={<ProtectedRoute><ActivityForm /></ProtectedRoute>}
+      />
+      <Route
+        path="/modules/crm/companies/:id/activities/:activityId"
+        element={<ProtectedRoute><ActivityForm /></ProtectedRoute>}
       />
 
       <Route

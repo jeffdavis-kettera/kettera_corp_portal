@@ -1,12 +1,14 @@
-// /modules/crm/companies/:id/opportunities — full pipeline view.
+// Opportunities tab body — full pipeline view for a company.
 //
-// Serves two modes depending on the URL:
-//   default (no ?contactId): all opportunities for the company
-//   ?contactId=X:            deals where that contact is primary
+// Rendered inside CompanyPageShell's <Outlet />. Consumes the loaded
+// company via useOutletContext so it doesn't re-fetch on every tab
+// switch. The ?contactId= query param still filters to a single
+// contact's deals (used when a user clicks "View all" from a
+// contact's inline preview). When that filter is active a small
+// notice + Clear filter link appears at the top of the body.
 
 import { useCallback, useEffect, useState } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import PageLayout from '../PageLayout.jsx';
+import { useNavigate, useOutletContext, useSearchParams } from 'react-router-dom';
 import { API_BASE_URL } from '../../utils/config.js';
 import { authenticatedFetchJson } from '../../utils/api.js';
 import {
@@ -16,8 +18,8 @@ import {
 const PAGE_SIZE = 50;
 
 export default function CompanyOpportunities() {
-  const { id: companyId } = useParams();
-  const [searchParams] = useSearchParams();
+  const { company } = useOutletContext();
+  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
 
   const contactIdParam = searchParams.get('contactId');
@@ -32,27 +34,21 @@ export default function CompanyOpportunities() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const [company, setCompany] = useState(null);
-  const [contact, setContact] = useState(null);
-
+  // Fetch the contact name if filtered — for the "Filtered by X" strip.
+  const [filterContact, setFilterContact] = useState(null);
   useEffect(() => {
+    if (!contactId) { setFilterContact(null); return; }
     let cancelled = false;
     (async () => {
       try {
-        const c = await authenticatedFetchJson(`${API_BASE_URL}/crm/companies/${companyId}`);
-        if (!cancelled) setCompany(c);
-      } catch { /* main load below surfaces errors */ }
-      if (contactId) {
-        try {
-          const p = await authenticatedFetchJson(
-            `${API_BASE_URL}/crm/companies/${companyId}/contacts/${contactId}`
-          );
-          if (!cancelled) setContact(p);
-        } catch { /* leave contact null */ }
-      }
+        const c = await authenticatedFetchJson(
+          `${API_BASE_URL}/crm/companies/${company.id}/contacts/${contactId}`
+        );
+        if (!cancelled) setFilterContact(c);
+      } catch { /* leave null */ }
     })();
     return () => { cancelled = true; };
-  }, [companyId, contactId]);
+  }, [company.id, contactId]);
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -74,7 +70,7 @@ export default function CompanyOpportunities() {
       params.set('limit', PAGE_SIZE);
       params.set('offset', offset);
       const data = await authenticatedFetchJson(
-        `${API_BASE_URL}/crm/companies/${companyId}/opportunities?${params.toString()}`
+        `${API_BASE_URL}/crm/companies/${company.id}/opportunities?${params.toString()}`
       );
       setOpportunities(data.opportunities || []);
     } catch (err) {
@@ -82,52 +78,39 @@ export default function CompanyOpportunities() {
     } finally {
       setLoading(false);
     }
-  }, [companyId, contactId, debouncedQ, stageFilter, offset]);
-
+  }, [company.id, contactId, debouncedQ, stageFilter, offset]);
   useEffect(() => { load(); }, [load]);
 
   const hasNextPage = opportunities.length === PAGE_SIZE;
   const hasPrevPage = offset > 0;
 
-  const contextTitle = contact
-    ? `Opportunities — ${[contact.firstName, contact.lastName].filter(Boolean).join(' ') || contact.email}`
-    : company
-    ? `Opportunities — ${company.name}`
-    : 'Opportunities';
+  function clearContactFilter() {
+    const next = new URLSearchParams(searchParams);
+    next.delete('contactId');
+    setSearchParams(next);
+  }
 
   const newUrl = contactId
-    ? `/modules/crm/companies/${companyId}/opportunities/new?contactId=${contactId}`
-    : `/modules/crm/companies/${companyId}/opportunities/new`;
-
-  const backUrl = contactId
-    ? `/modules/crm/companies/${companyId}/contacts/${contactId}`
-    : `/modules/crm/companies/${companyId}`;
+    ? `/modules/crm/companies/${company.id}/opportunities/new?contactId=${contactId}`
+    : `/modules/crm/companies/${company.id}/opportunities/new`;
 
   return (
-    <PageLayout
-      title={contextTitle}
-      actions={
-        <>
-          <button type="button" className="cancel-button" onClick={() => navigate(backUrl)}>
-            Back
+    <>
+      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', margin: '0 0 var(--space-4)' }}>
+        <h2 style={{ margin: 0 }}>Opportunities</h2>
+        <button type="button" className="btn-primary" onClick={() => navigate(newUrl)}>
+          Add Opportunity
+        </button>
+      </div>
+
+      {contactId && filterContact && (
+        <div className="info-banner" role="note" style={{ marginBottom: 'var(--space-4)' }}>
+          Filtered to deals where <strong>{[filterContact.firstName, filterContact.lastName].filter(Boolean).join(' ') || filterContact.email}</strong> is the primary contact.
+          {' '}
+          <button type="button" className="link-button" onClick={clearContactFilter}>
+            Clear filter
           </button>
-          <button type="button" className="btn-primary" onClick={() => navigate(newUrl)}>
-            Add Opportunity
-          </button>
-        </>
-      }
-    >
-      {contactId && contact && company && (
-        <p style={{ color: 'var(--color-text-secondary)', marginTop: 0 }}>
-          Deals where {contact.firstName} {contact.lastName} is the primary contact
-          at <strong>{company.name}</strong>. Other deals at {company.name} live on
-          the company view.
-        </p>
-      )}
-      {!contactId && company && (
-        <p style={{ color: 'var(--color-text-secondary)', marginTop: 0 }}>
-          All deals in progress for <strong>{company.name}</strong>.
-        </p>
+        </div>
       )}
 
       <div className="filter-bar" style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -157,7 +140,7 @@ export default function CompanyOpportunities() {
         <div className="spinner" role="status" aria-label="Loading opportunities" />
       ) : opportunities.length === 0 ? (
         <div className="no-users">
-          {debouncedQ || stageFilter
+          {debouncedQ || stageFilter || contactId
             ? 'No opportunities match those filters.'
             : 'No opportunities yet. Click Add Opportunity to create the first.'}
         </div>
@@ -177,7 +160,7 @@ export default function CompanyOpportunities() {
             <tbody>
               {opportunities.map((o) => (
                 <tr key={o.id}
-                    onClick={() => navigate(`/modules/crm/companies/${companyId}/opportunities/${o.id}`)}
+                    onClick={() => navigate(`/modules/crm/companies/${company.id}/opportunities/${o.id}`)}
                     className="data-table__row-clickable">
                   <td><strong>{o.name}</strong></td>
                   <td>
@@ -213,6 +196,6 @@ export default function CompanyOpportunities() {
                   onClick={() => setOffset(offset + PAGE_SIZE)}>Next →</button>
         </div>
       )}
-    </PageLayout>
+    </>
   );
 }

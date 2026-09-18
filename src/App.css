@@ -478,6 +478,45 @@ h1, h2, h3, h4 {
   color: var(--color-warning-tx);
 }
 
+/* ── Tab strip (Company detail — will spread to other detail
+       pages as they gain multiple sections) ─────────────────── */
+.tab-strip {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: var(--color-bg);
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  gap: 0;
+  margin: calc(-1 * var(--space-6)) calc(-1 * var(--space-6)) var(--space-5);
+  padding: 0 var(--space-6);
+}
+
+.tab-strip__tab {
+  padding: var(--space-3) var(--space-4);
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  font-weight: 500;
+  font-size: var(--font-size-base);
+  border-bottom: 2px solid transparent;
+  transition: color var(--transition-fast), border-color var(--transition-fast);
+  cursor: pointer;
+  background: transparent;
+  border-top: none;
+  border-left: none;
+  border-right: none;
+  font-family: inherit;
+}
+.tab-strip__tab:hover {
+  color: var(--color-text);
+  text-decoration: none;
+}
+.tab-strip__tab.is-active {
+  color: var(--color-accent-text);
+  border-bottom-color: var(--color-accent);
+  font-weight: 600;
+}
+
 /* ── Opportunity stage badges ─────────────────────────────── */
 .stage-badge {
   display: inline-block;

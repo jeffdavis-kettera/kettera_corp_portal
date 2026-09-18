@@ -1,15 +1,12 @@
-// /modules/crm/companies/:id/activities — full activity page.
+// Activity tab body — full activity log for a company.
 //
-// Handles two views via the same code path:
-//   Default (?contactId absent): company rollup — all activity
-//   ?contactId=X:                contact-scoped view (single contact)
-//
-// Contains the search + type filter + pagination that the inline
-// preview on Company/Contact Detail doesn't have room for.
+// Rendered inside CompanyPageShell's <Outlet />. Consumes the
+// loaded company via useOutletContext. Same ?contactId= filter
+// pattern as CompanyOpportunities — when set, shows only that
+// contact's activity with a Clear filter link.
 
 import { useCallback, useEffect, useState } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import PageLayout from '../PageLayout.jsx';
+import { useNavigate, useOutletContext, useSearchParams } from 'react-router-dom';
 import { API_BASE_URL } from '../../utils/config.js';
 import { authenticatedFetchJson } from '../../utils/api.js';
 
@@ -34,8 +31,8 @@ function formatDate(iso) {
 }
 
 export default function CompanyActivity() {
-  const { id: companyId } = useParams();
-  const [searchParams] = useSearchParams();
+  const { company } = useOutletContext();
+  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
 
   const contactIdParam = searchParams.get('contactId');
@@ -50,29 +47,20 @@ export default function CompanyActivity() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Also fetch a lightweight header ("activity for Acme" / "activity
-  // for Jane at Acme") so the page doesn't feel context-less.
-  const [company, setCompany] = useState(null);
-  const [contact, setContact] = useState(null);
-
+  const [filterContact, setFilterContact] = useState(null);
   useEffect(() => {
+    if (!contactId) { setFilterContact(null); return; }
     let cancelled = false;
     (async () => {
       try {
-        const c = await authenticatedFetchJson(`${API_BASE_URL}/crm/companies/${companyId}`);
-        if (!cancelled) setCompany(c);
-      } catch { /* handled by main load below */ }
-      if (contactId) {
-        try {
-          const p = await authenticatedFetchJson(
-            `${API_BASE_URL}/crm/companies/${companyId}/contacts/${contactId}`
-          );
-          if (!cancelled) setContact(p);
-        } catch { /* leave contact null */ }
-      }
+        const c = await authenticatedFetchJson(
+          `${API_BASE_URL}/crm/companies/${company.id}/contacts/${contactId}`
+        );
+        if (!cancelled) setFilterContact(c);
+      } catch { /* leave null */ }
     })();
     return () => { cancelled = true; };
-  }, [companyId, contactId]);
+  }, [company.id, contactId]);
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -82,7 +70,6 @@ export default function CompanyActivity() {
     return () => clearTimeout(t);
   }, [q]);
 
-  // Also reset offset on type change.
   useEffect(() => { setOffset(0); }, [type]);
 
   const load = useCallback(async () => {
@@ -95,7 +82,7 @@ export default function CompanyActivity() {
       params.set('limit', PAGE_SIZE);
       params.set('offset', offset);
       const data = await authenticatedFetchJson(
-        `${API_BASE_URL}/crm/companies/${companyId}/activities?${params.toString()}`
+        `${API_BASE_URL}/crm/companies/${company.id}/activities?${params.toString()}`
       );
       setActivities(data.activities || []);
     } catch (err) {
@@ -103,52 +90,40 @@ export default function CompanyActivity() {
     } finally {
       setLoading(false);
     }
-  }, [companyId, contactId, debouncedQ, type, offset]);
-
+  }, [company.id, contactId, debouncedQ, type, offset]);
   useEffect(() => { load(); }, [load]);
 
   const hasNextPage = activities.length === PAGE_SIZE;
   const hasPrevPage = offset > 0;
 
-  const contextTitle = contact
-    ? `Activity — ${[contact.firstName, contact.lastName].filter(Boolean).join(' ') || contact.email}`
-    : company
-    ? `Activity — ${company.name}`
-    : 'Activity';
+  function clearContactFilter() {
+    const next = new URLSearchParams(searchParams);
+    next.delete('contactId');
+    setSearchParams(next);
+  }
 
   const logNewUrl = contactId
-    ? `/modules/crm/companies/${companyId}/activities/new?contactId=${contactId}`
-    : `/modules/crm/companies/${companyId}/activities/new`;
-
-  const backUrl = contactId
-    ? `/modules/crm/companies/${companyId}/contacts/${contactId}`
-    : `/modules/crm/companies/${companyId}`;
+    ? `/modules/crm/companies/${company.id}/activities/new?contactId=${contactId}`
+    : `/modules/crm/companies/${company.id}/activities/new`;
 
   return (
-    <PageLayout
-      title={contextTitle}
-      actions={
-        <>
-          <button type="button" className="cancel-button" onClick={() => navigate(backUrl)}>
-            Back
+    <>
+      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', margin: '0 0 var(--space-4)' }}>
+        <h2 style={{ margin: 0 }}>Activity</h2>
+        <button type="button" className="btn-primary" onClick={() => navigate(logNewUrl)}>
+          Log Activity
+        </button>
+      </div>
+
+      {contactId && filterContact && (
+        <div className="info-banner" role="note" style={{ marginBottom: 'var(--space-4)' }}>
+          Filtered to activity for <strong>{[filterContact.firstName, filterContact.lastName].filter(Boolean).join(' ') || filterContact.email}</strong>.
+          Company-level activity is not shown.
+          {' '}
+          <button type="button" className="link-button" onClick={clearContactFilter}>
+            Show all activity
           </button>
-          <button type="button" className="btn-primary" onClick={() => navigate(logNewUrl)}>
-            Log Activity
-          </button>
-        </>
-      }
-    >
-      {contactId && contact && company && (
-        <p style={{ color: 'var(--color-text-secondary)', marginTop: 0 }}>
-          {contact.firstName} {contact.lastName} at <strong>{company.name}</strong>.
-          Company-level activity is not shown; use the company view to see the full rollup.
-        </p>
-      )}
-      {!contactId && company && (
-        <p style={{ color: 'var(--color-text-secondary)', marginTop: 0 }}>
-          Everything logged under <strong>{company.name}</strong> — including activity
-          logged at individual contacts.
-        </p>
+        </div>
       )}
 
       <div className="filter-bar" style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -178,7 +153,7 @@ export default function CompanyActivity() {
         <div className="spinner" role="status" aria-label="Loading activity" />
       ) : activities.length === 0 ? (
         <div className="no-users">
-          {debouncedQ || type
+          {debouncedQ || type || contactId
             ? 'No activity matches those filters.'
             : 'No activity logged yet. Click Log Activity to record the first.'}
         </div>
@@ -197,7 +172,7 @@ export default function CompanyActivity() {
             <tbody>
               {activities.map((a) => (
                 <tr key={a.id}
-                    onClick={() => navigate(`/modules/crm/companies/${companyId}/activities/${a.id}`)}
+                    onClick={() => navigate(`/modules/crm/companies/${company.id}/activities/${a.id}`)}
                     className="data-table__row-clickable">
                   <td className="muted">{formatDate(a.occurredAt)}</td>
                   <td>
@@ -228,6 +203,6 @@ export default function CompanyActivity() {
                   onClick={() => setOffset(offset + PAGE_SIZE)}>Next →</button>
         </div>
       )}
-    </PageLayout>
+    </>
   );
 }
