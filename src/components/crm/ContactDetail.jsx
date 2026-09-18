@@ -8,6 +8,7 @@ import FormActions from '../FormActions.jsx';
 import { API_BASE_URL } from '../../utils/config.js';
 import { authenticatedFetchJson, authenticatedFetch } from '../../utils/api.js';
 import ActivityInline from './ActivityInline.jsx';
+import OpportunityInline from './OpportunityInline.jsx';
 
 export default function ContactDetail() {
   const { id: companyId, contactId } = useParams();
@@ -203,6 +204,13 @@ export default function ContactDetail() {
           />
         </form>
       </PageCard>
+
+      {/* Deals where this contact is the primary contact. */}
+      <OpportunityInline
+        companyId={companyId}
+        contactId={Number(contactId)}
+        heading="Opportunities (as primary contact)"
+      />
 
       {/* Contact-scoped activity — just this contact's rows. Company
           rollup lives on the company detail page. */}

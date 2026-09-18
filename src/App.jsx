@@ -32,6 +32,8 @@ import CrmUsers from './components/crm/CrmUsers.jsx';
 import AddCrmUser from './components/crm/AddCrmUser.jsx';
 import CompanyActivity from './components/crm/CompanyActivity.jsx';
 import ActivityForm from './components/crm/ActivityForm.jsx';
+import CompanyOpportunities from './components/crm/CompanyOpportunities.jsx';
+import OpportunityForm from './components/crm/OpportunityForm.jsx';
 
 export default function App() {
   return (
@@ -120,6 +122,21 @@ export default function App() {
       <Route
         path="/modules/crm/companies/:id/activities/:activityId"
         element={<ProtectedRoute><ActivityForm /></ProtectedRoute>}
+      />
+
+      {/* CRM opportunities. Same static-before-param ordering as
+          activities so /new isn't matched as an :oppId. */}
+      <Route
+        path="/modules/crm/companies/:id/opportunities"
+        element={<ProtectedRoute><CompanyOpportunities /></ProtectedRoute>}
+      />
+      <Route
+        path="/modules/crm/companies/:id/opportunities/new"
+        element={<ProtectedRoute><OpportunityForm /></ProtectedRoute>}
+      />
+      <Route
+        path="/modules/crm/companies/:id/opportunities/:oppId"
+        element={<ProtectedRoute><OpportunityForm /></ProtectedRoute>}
       />
 
       <Route

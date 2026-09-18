@@ -16,6 +16,7 @@ import { API_BASE_URL } from '../../utils/config.js';
 import { authenticatedFetchJson, authenticatedFetch } from '../../utils/api.js';
 import { useCrmRole } from './useCrmRole.js';
 import ActivityInline from './ActivityInline.jsx';
+import OpportunityInline from './OpportunityInline.jsx';
 
 const TYPE_BADGE_CLASS = {
   General: 'role-badge role-badge--basic',
@@ -218,6 +219,9 @@ export default function CompanyDetail() {
           </table>
         </div>
       )}
+
+      {/* Deal pipeline for this company — every stage. */}
+      <OpportunityInline companyId={id} />
 
       {/* Company-level activity rollup — all activity under this
           company, including activity logged at contact level. */}
