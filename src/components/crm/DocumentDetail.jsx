@@ -1,10 +1,15 @@
 // /modules/crm/companies/:id/documents/:docId — edit metadata,
-// download the file, or delete the record + blob.
+// change sharing, download, or delete.
 //
-// File replacement is intentionally not supported here. If a user
-// wants to replace the file, they delete the row and re-upload.
-// That keeps this form focused on metadata + avoids the "partial
-// replacement" edge case (metadata saved, new file failed).
+// The owner module is shown read-only ("Owned by CRM"). Sharing is
+// a checkbox list of every other active module; toggling a box +
+// clicking Save PUTs the new share set (API replaces atomically).
+//
+// Only the owner module can delete a document — the API enforces
+// this; the frontend surfaces the resulting 403 as an error banner.
+// From CRM's perspective (this router IS CRM), delete is only
+// disabled here if the API-returned ownerModule.code is not 'CRM'
+// (which happens for docs that another module owns and shared TO CRM).
 
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -14,6 +19,8 @@ import FormActions from '../FormActions.jsx';
 import { API_BASE_URL } from '../../utils/config.js';
 import { authenticatedFetchJson, authenticatedFetch } from '../../utils/api.js';
 import { DOCUMENT_TYPES, formatBytes, formatDate } from './documentHelpers.js';
+
+const VIEWER_MODULE_CODE = 'CRM';
 
 export default function DocumentDetail() {
   const { id: companyId, docId } = useParams();
@@ -29,20 +36,24 @@ export default function DocumentDetail() {
   const [doc, setDoc] = useState(null);
   const [contacts, setContacts] = useState([]);
   const [opportunities, setOpportunities] = useState([]);
+  const [allModules, setAllModules] = useState([]);
 
   const [title, setTitle] = useState('');
   const [documentType, setDocumentType] = useState('Other');
   const [contactId, setContactId] = useState('');
   const [opportunityId, setOpportunityId] = useState('');
   const [notes, setNotes] = useState('');
+  const [sharedModuleIds, setSharedModuleIds] = useState(new Set());
+  const [savedShareIds, setSavedShareIds] = useState(new Set());
 
   const load = useCallback(async () => {
     setLoading(true); setError(null); setSuccess(null);
     try {
-      const [d, c, o] = await Promise.all([
+      const [d, c, o, m] = await Promise.all([
         authenticatedFetchJson(`${API_BASE_URL}/crm/companies/${companyId}/documents/${docId}`),
         authenticatedFetchJson(`${API_BASE_URL}/crm/companies/${companyId}/contacts`),
         authenticatedFetchJson(`${API_BASE_URL}/crm/companies/${companyId}/opportunities?limit=200`),
+        authenticatedFetchJson(`${API_BASE_URL}/modules`),
       ]);
       setDoc(d);
       setTitle(d.title || '');
@@ -50,8 +61,12 @@ export default function DocumentDetail() {
       setContactId(d.contactId ? String(d.contactId) : '');
       setOpportunityId(d.opportunityId ? String(d.opportunityId) : '');
       setNotes(d.notes || '');
+      const initialShares = new Set((d.sharedModules || []).map((s) => s.id));
+      setSharedModuleIds(initialShares);
+      setSavedShareIds(new Set(initialShares));
       setContacts(c.contacts || []);
       setOpportunities(o.opportunities || []);
+      setAllModules(m || []);
     } catch (err) {
       setError(err.message || 'Failed to load document.');
     } finally {
@@ -60,13 +75,35 @@ export default function DocumentDetail() {
   }, [companyId, docId]);
   useEffect(() => { load(); }, [load]);
 
-  const dirty = doc && (
+  // Modules eligible for sharing = all active modules except the owner.
+  const shareCandidates = doc
+    ? allModules.filter((m) => m.id !== doc.ownerModule?.id)
+    : [];
+
+  // Detect meaningful edits so Save is only enabled when needed.
+  const sharesChanged = doc && (
+    sharedModuleIds.size !== savedShareIds.size ||
+    [...sharedModuleIds].some((id) => !savedShareIds.has(id))
+  );
+  const metadataChanged = doc && (
     title !== (doc.title || '') ||
     documentType !== (doc.documentType || 'Other') ||
     contactId !== (doc.contactId ? String(doc.contactId) : '') ||
     opportunityId !== (doc.opportunityId ? String(doc.opportunityId) : '') ||
     notes !== (doc.notes || '')
   );
+  const dirty = metadataChanged || sharesChanged;
+
+  function toggleShare(moduleId) {
+    setSharedModuleIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(moduleId)) next.delete(moduleId);
+      else next.add(moduleId);
+      return next;
+    });
+  }
+
+  const isOwner = doc && doc.ownerModule?.code === VIEWER_MODULE_CODE;
 
   async function handleSave(e) {
     e.preventDefault();
@@ -74,20 +111,26 @@ export default function DocumentDetail() {
     setSaving(true); setError(null); setSuccess(null);
     try {
       if (!title.trim()) throw new Error('Title is required.');
+      const body = {
+        title: title.trim(),
+        documentType,
+        contactId: contactId ? Number(contactId) : null,
+        opportunityId: opportunityId ? Number(opportunityId) : null,
+        notes: notes.trim() || null,
+      };
+      // Only send sharedModuleIds when they actually changed —
+      // omit the field otherwise so the API leaves shares alone.
+      if (sharesChanged) {
+        body.sharedModuleIds = [...sharedModuleIds];
+      }
       const updated = await authenticatedFetchJson(
         `${API_BASE_URL}/crm/companies/${companyId}/documents/${docId}`,
-        {
-          method: 'PUT',
-          body: {
-            title: title.trim(),
-            documentType,
-            contactId: contactId ? Number(contactId) : null,
-            opportunityId: opportunityId ? Number(opportunityId) : null,
-            notes: notes.trim() || null,
-          },
-        }
+        { method: 'PUT', body }
       );
       setDoc(updated);
+      const refreshedShares = new Set((updated.sharedModules || []).map((s) => s.id));
+      setSharedModuleIds(refreshedShares);
+      setSavedShareIds(new Set(refreshedShares));
       setSuccess('Saved.');
     } catch (err) {
       setError(err.message || 'Save failed.');
@@ -165,7 +208,8 @@ export default function DocumentDetail() {
             type="button"
             className="cancel-button"
             onClick={handleDelete}
-            disabled={deleting}
+            disabled={deleting || !isOwner}
+            title={isOwner ? '' : `Only ${doc.ownerModule?.name || doc.ownerModule?.code} can delete this document. Ask them to delete it, or remove the CRM share from it.`}
             style={{ color: 'var(--color-danger-tx)', borderColor: 'var(--color-danger-tx)' }}
           >
             {deleting ? 'Deleting…' : 'Delete'}
@@ -176,6 +220,13 @@ export default function DocumentDetail() {
       <PageCard className="profile-card--form">
         {error && <div className="error-message"><p>{error}</p></div>}
         {success && <div className="success-message"><p>{success}</p></div>}
+        {!isOwner && (
+          <div className="info-banner" role="note">
+            This document is owned by <strong>{doc.ownerModule?.name || doc.ownerModule?.code}</strong> and
+            shared with CRM. You can edit metadata and change sharing, but only the
+            owner module can delete it.
+          </div>
+        )}
 
         <form onSubmit={handleSave} className="form-stack">
           <div className="form-group">
@@ -188,6 +239,19 @@ export default function DocumentDetail() {
                 {' · Uploaded '}
                 {formatDate(doc.createdAt)}
                 {doc.createdByName && ` by ${doc.createdByName}`}
+              </div>
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label>Ownership</label>
+            <div className="static-field">
+              <div>
+                <strong>Owned by {doc.ownerModule?.name || doc.ownerModule?.code}</strong>
+              </div>
+              <div className="muted" style={{ fontSize: 'var(--font-size-sm)' }}>
+                The owning module always sees this document. Change what other
+                modules can see it via the Share list below.
               </div>
             </div>
           </div>
@@ -234,6 +298,33 @@ export default function DocumentDetail() {
                 </option>
               ))}
             </select>
+          </div>
+
+          <div className="form-group">
+            <label>Share with other modules</label>
+            <div className="muted" style={{ fontSize: 'var(--font-size-xs)', marginBottom: 'var(--space-2)' }}>
+              {doc.ownerModule?.name || doc.ownerModule?.code} always sees this document. Choose which other
+              modules it should be visible in.
+            </div>
+            {shareCandidates.length === 0 ? (
+              <div className="muted" style={{ fontSize: 'var(--font-size-sm)' }}>
+                No other modules are available to share with.
+              </div>
+            ) : (
+              <div className="checkbox-list">
+                {shareCandidates.map((m) => (
+                  <label key={m.id} className="checkbox-list__item">
+                    <input
+                      type="checkbox"
+                      checked={sharedModuleIds.has(m.id)}
+                      onChange={() => toggleShare(m.id)}
+                      disabled={saving}
+                    />
+                    <span>{m.name}</span>
+                  </label>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="form-group">

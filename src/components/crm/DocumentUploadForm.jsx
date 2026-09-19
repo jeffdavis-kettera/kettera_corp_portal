@@ -1,6 +1,11 @@
 // /modules/crm/companies/:id/documents/upload — file upload form.
 // Multipart POST via FormData; api.js sends it through without
 // forcing a JSON Content-Type.
+//
+// The "Share with" section lists every ACTIVE module except CRM
+// (the owner — the API rejects owner-collision). Multi-select via
+// checkbox list; multiple `sharedModuleIds` fields go into FormData
+// and multer serializes them as an array.
 
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -11,6 +16,7 @@ import { API_BASE_URL } from '../../utils/config.js';
 import { authenticatedFetchJson } from '../../utils/api.js';
 import { DOCUMENT_TYPES, formatBytes } from './documentHelpers.js';
 
+const OWNER_MODULE_CODE = 'CRM';
 const MAX_UPLOAD_MB = 100;
 
 export default function DocumentUploadForm() {
@@ -19,6 +25,7 @@ export default function DocumentUploadForm() {
 
   const [contacts, setContacts] = useState([]);
   const [opportunities, setOpportunities] = useState([]);
+  const [shareCandidates, setShareCandidates] = useState([]);  // modules excluding owner
 
   const [file, setFile] = useState(null);
   const [title, setTitle] = useState('');
@@ -27,22 +34,26 @@ export default function DocumentUploadForm() {
   const [contactId, setContactId] = useState('');
   const [opportunityId, setOpportunityId] = useState('');
   const [notes, setNotes] = useState('');
+  const [sharedModuleIds, setSharedModuleIds] = useState(new Set());
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
 
-  // Load contacts + opportunities for the anchor dropdowns.
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const [c, o] = await Promise.all([
+        const [c, o, m] = await Promise.all([
           authenticatedFetchJson(`${API_BASE_URL}/crm/companies/${companyId}/contacts`),
           authenticatedFetchJson(`${API_BASE_URL}/crm/companies/${companyId}/opportunities?limit=200`),
+          authenticatedFetchJson(`${API_BASE_URL}/modules`),
         ]);
         if (cancelled) return;
         setContacts(c.contacts || []);
         setOpportunities(o.opportunities || []);
+        // Filter out the owner module — owner is implicit; you
+        // can't "share" a doc with the module that already owns it.
+        setShareCandidates((m || []).filter((mod) => mod.code !== OWNER_MODULE_CODE));
       } catch { /* non-fatal; user can still upload without anchoring */ }
     })();
     return () => { cancelled = true; };
@@ -51,14 +62,20 @@ export default function DocumentUploadForm() {
   const handleFileChange = useCallback((e) => {
     const f = e.target.files?.[0] || null;
     setFile(f);
-    // Auto-fill title from filename if the user hasn't touched
-    // the title field yet.
     if (f && !titleTouched) {
-      // Strip extension for a nicer default.
       const withoutExt = f.name.replace(/\.[^.]+$/, '');
       setTitle(withoutExt || f.name);
     }
   }, [titleTouched]);
+
+  function toggleShare(moduleId) {
+    setSharedModuleIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(moduleId)) next.delete(moduleId);
+      else next.add(moduleId);
+      return next;
+    });
+  }
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -79,6 +96,9 @@ export default function DocumentUploadForm() {
       if (contactId) form.append('contactId', contactId);
       if (opportunityId) form.append('opportunityId', opportunityId);
       if (notes.trim()) form.append('notes', notes.trim());
+      for (const modId of sharedModuleIds) {
+        form.append('sharedModuleIds', String(modId));
+      }
 
       const created = await authenticatedFetchJson(
         `${API_BASE_URL}/crm/companies/${companyId}/documents`,
@@ -104,9 +124,6 @@ export default function DocumentUploadForm() {
               type="file"
               onChange={handleFileChange}
               disabled={submitting}
-              // Not restricting accept="..." — CRM docs vary widely
-              // (PDF, DOCX, XLSX, PPTX, images, ZIP). API enforces
-              // the size cap; browser lets anything through.
             />
             {file && (
               <div className="muted" style={{ fontSize: 'var(--font-size-sm)', marginTop: 'var(--space-2)' }}>
@@ -166,6 +183,33 @@ export default function DocumentUploadForm() {
                 </option>
               ))}
             </select>
+          </div>
+
+          <div className="form-group">
+            <label>Share with other modules</label>
+            <div className="muted" style={{ fontSize: 'var(--font-size-xs)', marginBottom: 'var(--space-2)' }}>
+              CRM (the module you're uploading from) always sees this document.
+              Optionally expose it to any of the modules below.
+            </div>
+            {shareCandidates.length === 0 ? (
+              <div className="muted" style={{ fontSize: 'var(--font-size-sm)' }}>
+                No other modules are available to share with.
+              </div>
+            ) : (
+              <div className="checkbox-list">
+                {shareCandidates.map((m) => (
+                  <label key={m.id} className="checkbox-list__item">
+                    <input
+                      type="checkbox"
+                      checked={sharedModuleIds.has(m.id)}
+                      onChange={() => toggleShare(m.id)}
+                      disabled={submitting}
+                    />
+                    <span>{m.name}</span>
+                  </label>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="form-group">

@@ -156,6 +156,16 @@ export default function CompanyDocuments() {
                         {d.originalFilename}
                       </div>
                     )}
+                    {d.sharedModules && d.sharedModules.length > 0 && (
+                      <div className="muted" style={{ fontSize: 'var(--font-size-xs)', marginTop: 2 }}>
+                        Shared with: {d.sharedModules.map((m) => m.name).join(', ')}
+                      </div>
+                    )}
+                    {d.ownerModule && d.ownerModule.code !== 'CRM' && (
+                      <div className="muted" style={{ fontSize: 'var(--font-size-xs)', marginTop: 2 }}>
+                        Owned by {d.ownerModule.name}
+                      </div>
+                    )}
                   </td>
                   <td>
                     <span className={DOC_TYPE_BADGE_CLASS[d.documentType] || 'role-badge role-badge--basic'}>
