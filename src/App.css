@@ -480,10 +480,14 @@ h1, h2, h3, h4 {
 
 /* ── Tab strip (Company detail — will spread to other detail
        pages as they gain multiple sections) ─────────────────── */
+/* Not sticky. Attempting position: sticky + negative top margin
+   (used here to break the strip out of the .app-shell__content
+   padding for a full-bleed underline) caused the top edge of the
+   first tab-body row to be clipped underneath the strip. Company
+   detail pages are short enough that scrolling back up to switch
+   tabs is a non-issue; if a future page grows tall enough to
+   need sticky nav, we'll reconsider the structure. */
 .tab-strip {
-  position: sticky;
-  top: 0;
-  z-index: 5;
   background: var(--color-bg);
   border-bottom: 1px solid var(--color-border);
   display: flex;
