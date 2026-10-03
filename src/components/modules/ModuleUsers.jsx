@@ -1,4 +1,6 @@
-// /modules/crm/users — CRM member management for CRM Admins.
+// Module member management for module Admins. Shared by every module
+// in moduleConfigs.js — rendered at /modules/crm/users and
+// /modules/project-management/users with that module's config.
 //
 // Per-row role dropdown and Remove button. Each change fires
 // immediately with a per-row saving state (matches "team members"
@@ -13,12 +15,13 @@ import { useNavigate } from 'react-router-dom';
 import PageLayout from '../PageLayout.jsx';
 import { API_BASE_URL } from '../../utils/config.js';
 import { authenticatedFetchJson, authenticatedFetch } from '../../utils/api.js';
-import { useCrmRole } from './useCrmRole.js';
+import { useModuleRole } from './useModuleRole.js';
 import { usePortalUser } from '../../contexts/PortalUserContext.jsx';
 
-export default function CrmUsers() {
+export default function ModuleUsers({ module }) {
+  const { code, label, homePath, configPath, usersPath, usersApi } = module;
   const navigate = useNavigate();
-  const { isCrmAdmin } = useCrmRole();
+  const { isModuleAdmin } = useModuleRole(code);
   const { portalUser: me, refresh: refreshMe } = usePortalUser();
 
   const [q, setQ] = useState('');
@@ -30,8 +33,8 @@ export default function CrmUsers() {
   const [pendingId, setPendingId] = useState(null); // portalUserId currently mid-save
 
   useEffect(() => {
-    if (!isCrmAdmin) navigate('/modules/crm', { replace: true });
-  }, [isCrmAdmin, navigate]);
+    if (!isModuleAdmin) navigate(homePath, { replace: true });
+  }, [isModuleAdmin, navigate, homePath]);
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedQ(q.trim()), 300);
@@ -42,16 +45,16 @@ export default function CrmUsers() {
     setLoading(true); setError(null);
     try {
       const url = debouncedQ
-        ? `${API_BASE_URL}/modules/crm/users?q=${encodeURIComponent(debouncedQ)}`
-        : `${API_BASE_URL}/modules/crm/users`;
+        ? `${API_BASE_URL}${usersApi}?q=${encodeURIComponent(debouncedQ)}`
+        : `${API_BASE_URL}${usersApi}`;
       const data = await authenticatedFetchJson(url);
       setMembers(data.members || []);
     } catch (err) {
-      setError(err.message || 'Failed to load CRM users.');
+      setError(err.message || `Failed to load ${label} users.`);
     } finally {
       setLoading(false);
     }
-  }, [debouncedQ]);
+  }, [debouncedQ, usersApi, label]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -66,12 +69,12 @@ export default function CrmUsers() {
     ));
     try {
       await authenticatedFetchJson(
-        `${API_BASE_URL}/modules/crm/users/${m.portalUserId}`,
+        `${API_BASE_URL}${usersApi}/${m.portalUserId}`,
         { method: 'PUT', body: { role: nextRole } }
       );
       setSuccess(`Set ${m.email} to ${nextRole === 'Admin' ? 'Admin' : 'Basic User'}.`);
       // If they just changed THEIR OWN role, refresh the sidebar's
-      // notion of what CRM role they hold.
+      // notion of what module role they hold.
       if (me?.id === m.portalUserId) refreshMe();
     } catch (err) {
       setError(err.message || 'Role change failed.');
@@ -85,15 +88,15 @@ export default function CrmUsers() {
     if (pendingId) return;
     const target = m.displayName || m.email;
     const confirmMsg = me?.id === m.portalUserId
-      ? `Remove yourself from CRM? You'll lose access to CRM screens immediately (your portal user stays intact).`
-      : `Remove ${target} from CRM? Their portal user stays intact — this only revokes their CRM access.`;
+      ? `Remove yourself from ${label}? You'll lose access to ${label} screens immediately (your portal user stays intact).`
+      : `Remove ${target} from ${label}? Their portal user stays intact — this only revokes their ${label} access.`;
     if (!window.confirm(confirmMsg)) return;
 
     setError(null); setSuccess(null);
     setPendingId(m.portalUserId);
     try {
       const res = await authenticatedFetch(
-        `${API_BASE_URL}/modules/crm/users/${m.portalUserId}`,
+        `${API_BASE_URL}${usersApi}/${m.portalUserId}`,
         { method: 'DELETE' }
       );
       if (res.status !== 204) {
@@ -101,10 +104,10 @@ export default function CrmUsers() {
         throw new Error(body.error || `Remove failed (${res.status}).`);
       }
       setMembers((list) => list.filter((x) => x.portalUserId !== m.portalUserId));
-      setSuccess(`Removed ${target} from CRM.`);
+      setSuccess(`Removed ${target} from ${label}.`);
       if (me?.id === m.portalUserId) {
         refreshMe();
-        navigate('/modules/crm', { replace: true });
+        navigate(homePath, { replace: true });
       }
     } catch (err) {
       setError(err.message || 'Remove failed.');
@@ -115,20 +118,20 @@ export default function CrmUsers() {
 
   return (
     <PageLayout
-      title="CRM — Users"
+      title={`${label} — Users`}
       actions={
         <>
           <button
             type="button"
             className="cancel-button"
-            onClick={() => navigate('/modules/crm/config')}
+            onClick={() => navigate(configPath)}
           >
             Back to Configuration
           </button>
           <button
             type="button"
             className="btn-primary"
-            onClick={() => navigate('/modules/crm/users/add')}
+            onClick={() => navigate(`${usersPath}/add`)}
           >
             Add User
           </button>
@@ -136,9 +139,9 @@ export default function CrmUsers() {
       }
     >
       <p style={{ color: 'var(--color-text-secondary)', marginTop: 0 }}>
-        People who have access to the CRM module. You can grant CRM access to any
+        People who have access to the {label} module. You can grant {label} access to any
         existing portal user, change their role between Basic User and Admin, or
-        remove them from CRM (their portal user is not affected).
+        remove them from {label} (their portal user is not affected).
       </p>
 
       <div className="filter-bar">
@@ -148,7 +151,7 @@ export default function CrmUsers() {
           value={q}
           onChange={(e) => setQ(e.target.value)}
           className="filter-input"
-          aria-label="Search CRM users"
+          aria-label={`Search ${label} users`}
         />
       </div>
 
@@ -156,12 +159,12 @@ export default function CrmUsers() {
       {success && <div className="success-message"><p>{success}</p></div>}
 
       {loading ? (
-        <div className="spinner" role="status" aria-label="Loading CRM users" />
+        <div className="spinner" role="status" aria-label={`Loading ${label} users`} />
       ) : members.length === 0 ? (
         <div className="no-users">
           {debouncedQ
-            ? `No CRM users match "${debouncedQ}".`
-            : 'No CRM users yet. Click Add User to grant CRM access to a portal user.'}
+            ? `No ${label} users match "${debouncedQ}".`
+            : `No ${label} users yet. Click Add User to grant ${label} access to a portal user.`}
         </div>
       ) : (
         <div className="profile-card" style={{ padding: 0, overflowX: 'auto' }}>
@@ -170,7 +173,7 @@ export default function CrmUsers() {
               <tr>
                 <th>Name</th>
                 <th>Email</th>
-                <th style={{ width: '180px' }}>CRM Role</th>
+                <th style={{ width: '180px' }}>{label} Role</th>
                 <th>Status</th>
                 <th style={{ width: '120px' }}></th>
               </tr>
@@ -191,7 +194,7 @@ export default function CrmUsers() {
                         value={m.role}
                         onChange={(e) => handleRoleChange(m, e.target.value)}
                         disabled={isPending}
-                        aria-label={`CRM role for ${m.email}`}
+                        aria-label={`${label} role for ${m.email}`}
                       >
                         <option value="BasicUser">Basic User</option>
                         <option value="Admin">Admin</option>

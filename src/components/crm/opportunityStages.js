@@ -40,13 +40,14 @@ export function formatCurrency(value, currency = 'USD') {
 export function formatDate(iso) {
   if (!iso) return '';
   try {
-    // Force UTC-anchored parse for DATE values that come back as
-    // "YYYY-MM-DD" so tz offsets don't slide the day.
+    // DATE values come back as "YYYY-MM-DD" or as a UTC-midnight ISO
+    // string. Parse as UTC and format in UTC, so a viewer west of UTC
+    // doesn't see the previous day.
     const d = /^\d{4}-\d{2}-\d{2}$/.test(iso)
       ? new Date(`${iso}T00:00:00Z`)
       : new Date(iso);
     return d.toLocaleDateString(undefined, {
-      year: 'numeric', month: 'short', day: 'numeric',
+      year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC',
     });
   } catch { return String(iso).slice(0, 10); }
 }

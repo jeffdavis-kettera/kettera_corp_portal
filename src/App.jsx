@@ -8,7 +8,9 @@
 //   /              — redirects to /dashboard
 //   /dashboard     — welcome + module cards
 //   /users, /users/:id, /users/add — User Management
-//   /modules/:code — per-module dashboards (later phases)
+//   /modules/crm/...                — CRM
+//   /modules/project-management/... — Project Management
+//   /modules/:code — placeholder for modules not built yet
 //
 // Catch-all → redirect signed-in users to /dashboard, unauth'd to /login.
 
@@ -34,11 +36,15 @@ import DocumentDetail from './components/crm/DocumentDetail.jsx';
 import AddContact from './components/crm/AddContact.jsx';
 import ContactDetail from './components/crm/ContactDetail.jsx';
 import CrmConfig from './components/crm/CrmConfig.jsx';
-import CompanyAccess from './components/crm/CompanyAccess.jsx';
-import CrmUsers from './components/crm/CrmUsers.jsx';
-import AddCrmUser from './components/crm/AddCrmUser.jsx';
 import ActivityForm from './components/crm/ActivityForm.jsx';
 import OpportunityForm from './components/crm/OpportunityForm.jsx';
+import Projects from './components/pm/Projects.jsx';
+import ProjectForm from './components/pm/ProjectForm.jsx';
+import PmConfig from './components/pm/PmConfig.jsx';
+import ModuleUsers from './components/modules/ModuleUsers.jsx';
+import AddModuleUser from './components/modules/AddModuleUser.jsx';
+import ModuleCompanyAccess from './components/modules/ModuleCompanyAccess.jsx';
+import { CRM_MODULE, PM_MODULE } from './components/modules/moduleConfigs.js';
 
 export default function App() {
   return (
@@ -69,7 +75,10 @@ export default function App() {
         element={<ProtectedRoute><UserDetail /></ProtectedRoute>}
       />
 
-      {/* CRM — company list + Add + Config + module-user management */}
+      {/* CRM — company list + Add + Config + module-user management.
+          The users + company-access screens are shared with Project
+          Management; the `key` makes React remount them when moving
+          between modules instead of carrying state across. */}
       <Route
         path="/modules/crm"
         element={<ProtectedRoute><Companies /></ProtectedRoute>}
@@ -84,15 +93,15 @@ export default function App() {
       />
       <Route
         path="/modules/crm/config/company-access"
-        element={<ProtectedRoute><CompanyAccess /></ProtectedRoute>}
+        element={<ProtectedRoute><ModuleCompanyAccess key="crm" module={CRM_MODULE} /></ProtectedRoute>}
       />
       <Route
         path="/modules/crm/users"
-        element={<ProtectedRoute><CrmUsers /></ProtectedRoute>}
+        element={<ProtectedRoute><ModuleUsers key="crm" module={CRM_MODULE} /></ProtectedRoute>}
       />
       <Route
         path="/modules/crm/users/add"
-        element={<ProtectedRoute><AddCrmUser /></ProtectedRoute>}
+        element={<ProtectedRoute><AddModuleUser key="crm" module={CRM_MODULE} /></ProtectedRoute>}
       />
 
       {/* Company detail — nested tab shell.
@@ -148,6 +157,38 @@ export default function App() {
         element={<ProtectedRoute><DocumentDetail /></ProtectedRoute>}
       />
 
+      {/* Project Management — project list (grouped by CRM company) +
+          create/edit form + Config + module-user management. Declared
+          before the /modules/:code placeholder below. */}
+      <Route
+        path="/modules/project-management"
+        element={<ProtectedRoute><Projects /></ProtectedRoute>}
+      />
+      <Route
+        path="/modules/project-management/projects/new"
+        element={<ProtectedRoute><ProjectForm key="new" /></ProtectedRoute>}
+      />
+      <Route
+        path="/modules/project-management/projects/:projectId"
+        element={<ProtectedRoute><ProjectForm key="edit" /></ProtectedRoute>}
+      />
+      <Route
+        path="/modules/project-management/config"
+        element={<ProtectedRoute><PmConfig /></ProtectedRoute>}
+      />
+      <Route
+        path="/modules/project-management/config/company-access"
+        element={<ProtectedRoute><ModuleCompanyAccess key="pm" module={PM_MODULE} /></ProtectedRoute>}
+      />
+      <Route
+        path="/modules/project-management/users"
+        element={<ProtectedRoute><ModuleUsers key="pm" module={PM_MODULE} /></ProtectedRoute>}
+      />
+      <Route
+        path="/modules/project-management/users/add"
+        element={<ProtectedRoute><AddModuleUser key="pm" module={PM_MODULE} /></ProtectedRoute>}
+      />
+
       <Route
         path="/modules/:code"
         element={
@@ -155,7 +196,7 @@ export default function App() {
             <Placeholder
               title="Module"
               phase="later"
-              message="Individual modules (Project Management, Timekeeping, Accounting, ...) each get their own implementation plan."
+              message="Individual modules (Timekeeping, Accounting, ...) each get their own implementation plan."
             />
           </ProtectedRoute>
         }

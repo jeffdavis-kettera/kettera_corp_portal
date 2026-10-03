@@ -6,15 +6,13 @@
 //   isCrmAdmin — boolean
 //   hasCrmAccess — boolean (true for either role)
 
-import { usePortalUser } from '../../contexts/PortalUserContext.jsx';
+import { useModuleRole } from '../modules/useModuleRole.js';
 
 export function useCrmRole() {
-  const { modules } = usePortalUser();
-  const assignment = (modules || []).find((m) => m.code === 'CRM');
-  const role = assignment?.role ?? null;
+  const { role, isModuleAdmin, hasModuleAccess } = useModuleRole('CRM');
   return {
     role,
-    isCrmAdmin: role === 'Admin',
-    hasCrmAccess: role != null,
+    isCrmAdmin: isModuleAdmin,
+    hasCrmAccess: hasModuleAccess,
   };
 }

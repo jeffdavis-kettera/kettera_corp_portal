@@ -1,9 +1,12 @@
-// /modules/crm/config/company-access — grant editor.
+// Company access grant editor. Shared by every module in
+// moduleConfigs.js (/modules/crm/config/company-access,
+// /modules/project-management/config/company-access); each module
+// keeps its own grants on the API side.
 //
 // UI: pick a company from a dropdown (URL query ?companyId= keeps
-// the selection shareable). Table below shows every CRM Basic User
-// with a checkbox for whether they have access. Save button issues
-// PUT with the checked user ids.
+// the selection shareable). Table below shows every Basic User of
+// the module with a checkbox for whether they have access. Save
+// button issues PUT with the checked user ids.
 //
 // Admins are not shown in the pool — they see everything unconditionally.
 
@@ -14,12 +17,13 @@ import PageCard from '../PageCard.jsx';
 import FormActions from '../FormActions.jsx';
 import { API_BASE_URL } from '../../utils/config.js';
 import { authenticatedFetchJson } from '../../utils/api.js';
-import { useCrmRole } from './useCrmRole.js';
+import { useModuleRole } from './useModuleRole.js';
 
-export default function CompanyAccess() {
+export default function ModuleCompanyAccess({ module }) {
+  const { code, label, homePath, configPath, companiesApi, companyAccessApi, companyAccessIntro } = module;
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { isCrmAdmin } = useCrmRole();
+  const { isModuleAdmin } = useModuleRole(code);
 
   const initialCompanyId = searchParams.get('companyId')
     ? Number(searchParams.get('companyId'))
@@ -36,18 +40,15 @@ export default function CompanyAccess() {
   const [success, setSuccess] = useState(null);
 
   useEffect(() => {
-    if (!isCrmAdmin) navigate('/modules/crm', { replace: true });
-  }, [isCrmAdmin, navigate]);
+    if (!isModuleAdmin) navigate(homePath, { replace: true });
+  }, [isModuleAdmin, navigate, homePath]);
 
   // Load company list once for the picker.
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        // Fetch a big page; there's no admin-scale pagination UX here
-        // yet. If Kettera ends up with thousands of companies we swap
-        // this for a search-picker.
-        const data = await authenticatedFetchJson(`${API_BASE_URL}/crm/companies?limit=200&offset=0`);
+        const data = await authenticatedFetchJson(`${API_BASE_URL}${companiesApi}`);
         if (!cancelled) setCompanies(data.companies || []);
       } catch (err) {
         if (!cancelled) setError(err.message || 'Failed to load companies.');
@@ -56,7 +57,7 @@ export default function CompanyAccess() {
       }
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [companiesApi]);
 
   // Fetch the grant matrix whenever the selected company changes.
   const loadAccess = useCallback(async (companyId) => {
@@ -64,7 +65,7 @@ export default function CompanyAccess() {
     setLoading(true); setError(null); setSuccess(null);
     try {
       const data = await authenticatedFetchJson(
-        `${API_BASE_URL}/crm/config/company-access?companyId=${companyId}`
+        `${API_BASE_URL}${companyAccessApi}?companyId=${companyId}`
       );
       setCompanyAccess(data);
       setChecked(new Set((data.grants || []).map((g) => g.portalUserId)));
@@ -75,7 +76,7 @@ export default function CompanyAccess() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [companyAccessApi]);
 
   useEffect(() => { loadAccess(selectedCompanyId); }, [selectedCompanyId, loadAccess]);
 
@@ -99,7 +100,7 @@ export default function CompanyAccess() {
     if (!selectedCompanyId || saving) return;
     setSaving(true); setError(null); setSuccess(null);
     try {
-      await authenticatedFetchJson(`${API_BASE_URL}/crm/config/company-access`, {
+      await authenticatedFetchJson(`${API_BASE_URL}${companyAccessApi}`, {
         method: 'PUT',
         body: {
           companyId: selectedCompanyId,
@@ -120,12 +121,10 @@ export default function CompanyAccess() {
   const eligibleUsers = companyAccess?.eligibleUsers || [];
 
   return (
-    <PageLayout title="CRM — Company Access">
+    <PageLayout title={`${label} — Company Access`}>
       <PageCard className="profile-card--form">
         <p style={{ marginTop: 0, color: 'var(--color-text-secondary)' }}>
-          Choose which CRM Basic Users can see and interact with a specific
-          company. CRM Admins always see every company; only Basic Users
-          appear in the list below.
+          {companyAccessIntro}
         </p>
 
         {error && <div className="error-message"><p>{error}</p></div>}
@@ -153,8 +152,8 @@ export default function CompanyAccess() {
             </h3>
             {eligibleUsers.length === 0 ? (
               <div className="no-users">
-                No CRM Basic Users exist yet. Add users to the portal and
-                grant them the CRM Basic User role first.
+                No {label} Basic Users exist yet. Add users to the portal and
+                grant them the {label} Basic User role first.
               </div>
             ) : (
               <form onSubmit={handleSave}>
@@ -188,7 +187,7 @@ export default function CompanyAccess() {
                 </div>
 
                 <FormActions
-                  onCancel={() => navigate('/modules/crm/config')}
+                  onCancel={() => navigate(configPath)}
                   cancelText="Back to Configuration"
                   submitText="Save access"
                   submittingText="Saving…"

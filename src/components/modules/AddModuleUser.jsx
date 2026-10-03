@@ -1,9 +1,11 @@
-// /modules/crm/users/add — pick an existing portal user, assign a
-// CRM role, save. Different from the app-level AddUser (which
-// searches Firebase). This one only offers portal_user rows that
-// already exist and don't have a CRM role yet — module admins
-// cannot invite new people into the portal, only re-scope who has
-// access to their module.
+// Add a member to a module — pick an existing portal user, assign a
+// module role, save. Shared by every module in moduleConfigs.js
+// (/modules/crm/users/add, /modules/project-management/users/add).
+// Different from the app-level AddUser (which searches Firebase).
+// This one only offers portal_user rows that already exist and don't
+// have a role in this module yet — module admins cannot invite new
+// people into the portal, only re-scope who has access to their
+// module.
 
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -12,11 +14,12 @@ import PageCard from '../PageCard.jsx';
 import FormActions from '../FormActions.jsx';
 import { API_BASE_URL } from '../../utils/config.js';
 import { authenticatedFetchJson } from '../../utils/api.js';
-import { useCrmRole } from './useCrmRole.js';
+import { useModuleRole } from './useModuleRole.js';
 
-export default function AddCrmUser() {
+export default function AddModuleUser({ module }) {
+  const { code, label, usersPath, usersApi, roleHelp } = module;
   const navigate = useNavigate();
-  const { isCrmAdmin } = useCrmRole();
+  const { isModuleAdmin } = useModuleRole(code);
 
   const [q, setQ] = useState('');
   const [debouncedQ, setDebouncedQ] = useState('');
@@ -31,8 +34,8 @@ export default function AddCrmUser() {
   const [submitError, setSubmitError] = useState(null);
 
   useEffect(() => {
-    if (!isCrmAdmin) navigate('/modules/crm/users', { replace: true });
-  }, [isCrmAdmin, navigate]);
+    if (!isModuleAdmin) navigate(usersPath, { replace: true });
+  }, [isModuleAdmin, navigate, usersPath]);
 
   // Debounced search.
   useEffect(() => {
@@ -44,8 +47,8 @@ export default function AddCrmUser() {
     setSearching(true); setSearchError(null);
     try {
       const url = debouncedQ
-        ? `${API_BASE_URL}/modules/crm/users/eligible?q=${encodeURIComponent(debouncedQ)}`
-        : `${API_BASE_URL}/modules/crm/users/eligible`;
+        ? `${API_BASE_URL}${usersApi}/eligible?q=${encodeURIComponent(debouncedQ)}`
+        : `${API_BASE_URL}${usersApi}/eligible`;
       const data = await authenticatedFetchJson(url);
       setCandidates(data.candidates || []);
     } catch (err) {
@@ -54,7 +57,7 @@ export default function AddCrmUser() {
       setSearching(false);
       setInitialLoad(false);
     }
-  }, [debouncedQ]);
+  }, [debouncedQ, usersApi]);
 
   useEffect(() => { search(); }, [search]);
 
@@ -64,27 +67,27 @@ export default function AddCrmUser() {
     setSubmitError(null);
     setSubmitting(true);
     try {
-      await authenticatedFetchJson(`${API_BASE_URL}/modules/crm/users`, {
+      await authenticatedFetchJson(`${API_BASE_URL}${usersApi}`, {
         method: 'POST',
         body: { portalUserId: picked.portalUserId, role },
       });
-      navigate('/modules/crm/users', { replace: true });
+      navigate(usersPath, { replace: true });
     } catch (err) {
-      setSubmitError(err.message || 'Failed to add user to CRM.');
+      setSubmitError(err.message || `Failed to add user to ${label}.`);
     } finally {
       setSubmitting(false);
     }
   }
 
   return (
-    <PageLayout title="Add CRM User">
+    <PageLayout title={`Add ${label} User`}>
       <PageCard className="profile-card--form">
         {!picked ? (
           <>
             <h2 style={{ marginTop: 0 }}>Pick a portal user</h2>
             <p style={{ color: 'var(--color-text-secondary)', marginTop: 0 }}>
-              Only users who are already in the portal but don't yet have a CRM
-              role are shown. To add a new person to the portal itself, an
+              Only users who are already in the portal but don't yet have a {label}
+              {' '}role are shown. To add a new person to the portal itself, an
               app-Admin uses the top-level User Management screen.
             </p>
 
@@ -107,8 +110,8 @@ export default function AddCrmUser() {
             ) : candidates.length === 0 ? (
               <div className="no-users">
                 {debouncedQ
-                  ? `No portal users match "${debouncedQ}" who don't already have a CRM role.`
-                  : 'Every portal user already has a CRM role. Nothing to add here.'}
+                  ? `No portal users match "${debouncedQ}" who don't already have a ${label} role.`
+                  : `Every portal user already has a ${label} role. Nothing to add here.`}
               </div>
             ) : (
               <ul className="candidate-list">
@@ -133,7 +136,7 @@ export default function AddCrmUser() {
             )}
 
             <FormActions
-              onCancel={() => navigate('/modules/crm/users')}
+              onCancel={() => navigate(usersPath)}
               cancelText="Cancel"
               submitText=""
               disableSubmit
@@ -141,9 +144,9 @@ export default function AddCrmUser() {
           </>
         ) : (
           <>
-            <h2 style={{ marginTop: 0 }}>Assign CRM role</h2>
+            <h2 style={{ marginTop: 0 }}>Assign {label} role</h2>
             <p style={{ color: 'var(--color-text-secondary)', marginTop: 0 }}>
-              Granting <strong>{picked.email}</strong> access to the CRM module.{' '}
+              Granting <strong>{picked.email}</strong> access to the {label} module.{' '}
               <button
                 type="button"
                 onClick={() => setPicked(null)}
@@ -169,22 +172,22 @@ export default function AddCrmUser() {
               </div>
 
               <div className="form-group">
-                <label htmlFor="role">CRM role</label>
+                <label htmlFor="role">{label} role</label>
                 <select
                   id="role"
                   value={role}
                   onChange={(e) => setRole(e.target.value)}
                   disabled={submitting}
                 >
-                  <option value="BasicUser">Basic User — needs company access granted separately in Configuration</option>
-                  <option value="Admin">Admin — sees every company automatically, can manage CRM users</option>
+                  <option value="BasicUser">{roleHelp.BasicUser}</option>
+                  <option value="Admin">{roleHelp.Admin}</option>
                 </select>
               </div>
 
               <FormActions
                 onCancel={() => setPicked(null)}
                 cancelText="Back"
-                submitText="Add to CRM"
+                submitText={`Add to ${label}`}
                 submittingText="Adding…"
                 isSubmitting={submitting}
               />
