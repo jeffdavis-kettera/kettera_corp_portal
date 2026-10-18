@@ -108,7 +108,7 @@ export default function AddContact() {
                       disabled={submitting} />
           </div>
           <FormActions
-            onCancel={() => navigate(`/modules/crm/companies/${companyId}`)}
+            onCancel={() => navigate(`/modules/crm/companies/${companyId}/contacts`)}
             cancelText="Cancel"
             submitText="Create Contact"
             submittingText="Creating…"

@@ -52,6 +52,18 @@ export function formatDate(iso) {
   } catch { return String(iso).slice(0, 10); }
 }
 
+/** Timestamp → user-locale short date + time, in the viewer's zone. */
+export function formatDateTime(iso) {
+  if (!iso) return '';
+  try {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return '';
+    return d.toLocaleString(undefined, {
+      year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
+    });
+  } catch { return ''; }
+}
+
 /** Turn an ISO date to a value acceptable to <input type="date">. */
 export function toDateInputValue(iso) {
   if (!iso) return '';

@@ -14,9 +14,9 @@
 // strip doesn't distract. Save/Cancel routes back to whichever tab
 // makes sense.
 //
-// The refactor pattern established here is what we'll use for
-// Contact detail, and for future modules when their record pages
-// grow past ~3 sections.
+// OpportunityPageShell reuses this pattern for an opportunity
+// (Details | Tools). It's the template for any record page that grows
+// past ~3 sections.
 
 import { useCallback, useEffect, useState } from 'react';
 import { NavLink, Outlet, useNavigate, useParams } from 'react-router-dom';

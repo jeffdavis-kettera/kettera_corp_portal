@@ -12,10 +12,13 @@
 // PM Basic Users get the same layout read-only with an info banner,
 // the CompanyOverview pattern for admin-managed records.
 //
-// Save, Cancel, and Delete return to wherever the user came from (the
-// list passes its filtered URL in location state), else the list.
+// Navigation follows the portal-wide form pattern: creating lands on
+// the new project; saving an existing one stays here and shows
+// "Saved."; Back to Projects and Delete return to the list — the
+// filtered list the user came from (passed in location state), else
+// the unfiltered one.
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import PageLayout from '../PageLayout.jsx';
 import PageCard from '../PageCard.jsx';
@@ -29,6 +32,21 @@ const LIST_PATH = '/modules/project-management';
 
 function personLabel(displayName, email) {
   return displayName || email || 'Unknown user';
+}
+
+// The form's field values for a stored project — used both to fill
+// the form and to tell whether anything has changed since.
+function toFormValues(p) {
+  return {
+    companyId: String(p.companyId),
+    opportunityId: p.opportunityId ? String(p.opportunityId) : '',
+    name: p.name,
+    status: p.status,
+    startDate: toDateInputValue(p.startDate),
+    endDate: toDateInputValue(p.endDate),
+    projectManagerUserId: p.projectManagerUserId ? String(p.projectManagerUserId) : '',
+    description: p.description || '',
+  };
 }
 
 export default function ProjectForm() {
@@ -45,10 +63,11 @@ export default function ProjectForm() {
 
   const [loading, setLoading] = useState(isEdit);
   const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  const [project, setProject] = useState(null); // loaded row (edit / view)
+  const [project, setProject] = useState(null); // last loaded / saved row (edit / view)
   const [companies, setCompanies] = useState([]);
   const [members, setMembers] = useState([]);
   const [membersLoaded, setMembersLoaded] = useState(false);
@@ -114,6 +133,19 @@ export default function ProjectForm() {
     return () => { cancelled = true; };
   }, [isPmAdmin, companyId]);
 
+  const applyProject = useCallback((p) => {
+    const v = toFormValues(p);
+    setProject(p);
+    setCompanyId(v.companyId);
+    setOpportunityId(v.opportunityId);
+    setName(v.name);
+    setStatus(v.status);
+    setStartDate(v.startDate);
+    setEndDate(v.endDate);
+    setProjectManagerUserId(v.projectManagerUserId);
+    setDescription(v.description);
+  }, []);
+
   // Edit / view: load the project.
   useEffect(() => {
     if (!isEdit) return;
@@ -122,16 +154,7 @@ export default function ProjectForm() {
       setLoading(true); setError(null);
       try {
         const p = await authenticatedFetchJson(`${API_BASE_URL}/pm/projects/${projectId}`);
-        if (cancelled) return;
-        setProject(p);
-        setCompanyId(String(p.companyId));
-        setOpportunityId(p.opportunityId ? String(p.opportunityId) : '');
-        setName(p.name);
-        setStatus(p.status);
-        setStartDate(toDateInputValue(p.startDate));
-        setEndDate(toDateInputValue(p.endDate));
-        setProjectManagerUserId(p.projectManagerUserId ? String(p.projectManagerUserId) : '');
-        setDescription(p.description || '');
+        if (!cancelled) applyProject(p);
       } catch (err) {
         if (!cancelled) setError(err.message || 'Failed to load project.');
       } finally {
@@ -139,7 +162,15 @@ export default function ProjectForm() {
       }
     })();
     return () => { cancelled = true; };
-  }, [isEdit, projectId]);
+  }, [isEdit, projectId, applyProject]);
+
+  const storedValues = project ? toFormValues(project) : null;
+  const currentValues = {
+    companyId, opportunityId, name, status,
+    startDate, endDate, projectManagerUserId, description,
+  };
+  const dirty = Boolean(storedValues)
+    && Object.keys(currentValues).some((k) => currentValues[k] !== storedValues[k]);
 
   function handleCompanyChange(e) {
     setCompanyId(e.target.value);
@@ -161,7 +192,7 @@ export default function ProjectForm() {
   async function handleSubmit(e) {
     e.preventDefault();
     if (submitting || readOnly) return;
-    setError(null);
+    setError(null); setSuccess(null);
     if (!companyId) return setError('Company is required.');
     if (!name.trim()) return setError('Name is required.');
     if (startDate && endDate && endDate < startDate) {
@@ -180,11 +211,17 @@ export default function ProjectForm() {
     setSubmitting(true);
     try {
       if (isEdit) {
-        await authenticatedFetchJson(`${API_BASE_URL}/pm/projects/${projectId}`, { method: 'PUT', body });
+        const updated = await authenticatedFetchJson(
+          `${API_BASE_URL}/pm/projects/${projectId}`, { method: 'PUT', body }
+        );
+        applyProject(updated);
+        setSuccess('Saved.');
       } else {
-        await authenticatedFetchJson(`${API_BASE_URL}/pm/projects`, { method: 'POST', body });
+        const created = await authenticatedFetchJson(`${API_BASE_URL}/pm/projects`, { method: 'POST', body });
+        // Carry the list URL along so Back to Projects still returns
+        // to the (filtered) list the user started from.
+        navigate(`${LIST_PATH}/projects/${created.id}`, { replace: true, state: { from: backTo } });
       }
-      navigate(backTo, { replace: true });
     } catch (err) {
       setError(err.message || 'Save failed.');
     } finally {
@@ -276,6 +313,7 @@ export default function ProjectForm() {
     >
       <PageCard className="profile-card--form">
         {error && <div className="error-message"><p>{error}</p></div>}
+        {success && <div className="success-message"><p>{success}</p></div>}
         {readOnly && (
           <div className="info-banner" role="note">
             You have access to this project as a Project Management Basic User.
@@ -376,10 +414,11 @@ export default function ProjectForm() {
           ) : (
             <FormActions
               onCancel={() => navigate(backTo)}
-              cancelText="Cancel"
+              cancelText={isEdit ? 'Back to Projects' : 'Cancel'}
               submitText={isEdit ? 'Save changes' : 'Add project'}
               submittingText={isEdit ? 'Saving…' : 'Creating…'}
               isSubmitting={submitting}
+              disableSubmit={isEdit && !dirty}
             />
           )}
         </form>

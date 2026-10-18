@@ -10,6 +10,11 @@
 // present, it loads the row and POST becomes PUT; otherwise it's
 // a fresh insert. Contact can be reassigned on edit via a picker
 // (dropdown of contacts under the company).
+//
+// Navigation follows the portal-wide form pattern: logging lands on
+// the new activity; saving an existing one stays here and shows
+// "Saved."; Back to Activity and Delete go to the company's Activity
+// tab.
 
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
@@ -36,6 +41,18 @@ function toDatetimeLocal(iso) {
   return `${y}-${mo}-${da}T${h}:${mi}`;
 }
 
+// The form's field values for a stored activity — used both to fill
+// the form and to tell whether anything has changed since.
+function toFormValues(a) {
+  return {
+    activityType: a.activityType,
+    subject: a.subject,
+    body: a.body || '',
+    occurredAt: toDatetimeLocal(a.occurredAt),
+    contactId: a.contactId ? String(a.contactId) : '',
+  };
+}
+
 export default function ActivityForm() {
   const { id: companyId, activityId } = useParams();
   const [searchParams] = useSearchParams();
@@ -43,11 +60,14 @@ export default function ActivityForm() {
 
   const isEdit = Boolean(activityId);
   const initialContactId = searchParams.get('contactId') || null;
+  const listUrl = `/modules/crm/companies/${companyId}/activities`;
 
   const [loading, setLoading] = useState(isEdit);
   const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [stored, setStored] = useState(null); // last loaded / saved activity (edit mode)
 
   const [contacts, setContacts] = useState([]);
   const [activityType, setActivityType] = useState('Call');
@@ -70,6 +90,16 @@ export default function ActivityForm() {
     return () => { cancelled = true; };
   }, [companyId]);
 
+  const applyActivity = useCallback((a) => {
+    const v = toFormValues(a);
+    setStored(a);
+    setActivityType(v.activityType);
+    setSubject(v.subject);
+    setBody(v.body);
+    setOccurredAt(v.occurredAt);
+    setContactId(v.contactId);
+  }, []);
+
   // In edit mode, load the activity.
   useEffect(() => {
     if (!isEdit) return;
@@ -80,12 +110,7 @@ export default function ActivityForm() {
         const a = await authenticatedFetchJson(
           `${API_BASE_URL}/crm/companies/${companyId}/activities/${activityId}`
         );
-        if (cancelled) return;
-        setActivityType(a.activityType);
-        setSubject(a.subject);
-        setBody(a.body || '');
-        setOccurredAt(toDatetimeLocal(a.occurredAt));
-        setContactId(a.contactId ? String(a.contactId) : '');
+        if (!cancelled) applyActivity(a);
       } catch (err) {
         if (!cancelled) setError(err.message || 'Failed to load activity.');
       } finally {
@@ -93,7 +118,12 @@ export default function ActivityForm() {
       }
     })();
     return () => { cancelled = true; };
-  }, [isEdit, companyId, activityId]);
+  }, [isEdit, companyId, activityId, applyActivity]);
+
+  const storedValues = stored ? toFormValues(stored) : null;
+  const currentValues = { activityType, subject, body, occurredAt, contactId };
+  const dirty = Boolean(storedValues)
+    && Object.keys(currentValues).some((k) => currentValues[k] !== storedValues[k]);
 
   const buildBody = useCallback(() => {
     const payload = {
@@ -111,28 +141,24 @@ export default function ActivityForm() {
   async function handleSubmit(e) {
     e.preventDefault();
     if (submitting) return;
-    setError(null);
+    setError(null); setSuccess(null);
     if (!subject.trim()) return setError('Subject is required.');
     setSubmitting(true);
     try {
       if (isEdit) {
-        await authenticatedFetchJson(
+        const updated = await authenticatedFetchJson(
           `${API_BASE_URL}/crm/companies/${companyId}/activities/${activityId}`,
           { method: 'PUT', body: buildBody() }
         );
+        applyActivity(updated);
+        setSuccess('Saved.');
       } else {
-        await authenticatedFetchJson(
+        const created = await authenticatedFetchJson(
           `${API_BASE_URL}/crm/companies/${companyId}/activities`,
           { method: 'POST', body: buildBody() }
         );
+        navigate(`${listUrl}/${created.id}`, { replace: true });
       }
-      // On successful save, go back to where we came from — the
-      // contact page if we were logging contact-level, else the
-      // company page. Full activity page → back = whichever.
-      const backTo = contactId
-        ? `/modules/crm/companies/${companyId}/contacts/${contactId}`
-        : `/modules/crm/companies/${companyId}`;
-      navigate(backTo, { replace: true });
     } catch (err) {
       setError(err.message || 'Save failed.');
     } finally {
@@ -153,7 +179,7 @@ export default function ActivityForm() {
         const bodyRes = await res.json().catch(() => ({}));
         throw new Error(bodyRes.error || `Delete failed (${res.status}).`);
       }
-      navigate(`/modules/crm/companies/${companyId}`, { replace: true });
+      navigate(listUrl, { replace: true });
     } catch (err) {
       setError(err.message || 'Delete failed.');
     } finally {
@@ -184,6 +210,7 @@ export default function ActivityForm() {
     >
       <PageCard className="profile-card--form">
         {error && <div className="error-message"><p>{error}</p></div>}
+        {success && <div className="success-message"><p>{success}</p></div>}
 
         <form onSubmit={handleSubmit} className="form-stack">
           <div className="form-group">
@@ -233,16 +260,12 @@ export default function ActivityForm() {
           </div>
 
           <FormActions
-            onCancel={() => {
-              const backTo = contactId
-                ? `/modules/crm/companies/${companyId}/contacts/${contactId}`
-                : `/modules/crm/companies/${companyId}`;
-              navigate(backTo);
-            }}
-            cancelText="Cancel"
+            onCancel={() => navigate(listUrl)}
+            cancelText={isEdit ? 'Back to Activity' : 'Cancel'}
             submitText={isEdit ? 'Save changes' : 'Log activity'}
             submittingText={isEdit ? 'Saving…' : 'Logging…'}
             isSubmitting={submitting}
+            disableSubmit={isEdit && !dirty}
           />
         </form>
       </PageCard>

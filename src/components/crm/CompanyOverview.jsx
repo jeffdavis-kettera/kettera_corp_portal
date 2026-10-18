@@ -16,6 +16,7 @@ import PageCard from '../PageCard.jsx';
 import FormActions from '../FormActions.jsx';
 import OpportunityInline from './OpportunityInline.jsx';
 import ActivityInline from './ActivityInline.jsx';
+import CompanyProfileCard from './CompanyProfileCard.jsx';
 import { API_BASE_URL } from '../../utils/config.js';
 import { authenticatedFetchJson } from '../../utils/api.js';
 import { useCrmRole } from './useCrmRole.js';
@@ -75,8 +76,9 @@ export default function CompanyOverview() {
         {success && <div className="success-message"><p>{success}</p></div>}
         {!isCrmAdmin && (
           <div className="info-banner" role="note">
-            You have access to this company as a CRM Basic User. Company details
-            are managed by CRM admins.
+            You have access to this company as a CRM Basic User. Name, website and
+            notes are managed by CRM admins; the company profile below is open to
+            everyone with access.
           </div>
         )}
 
@@ -111,6 +113,10 @@ export default function CompanyOverview() {
           )}
         </form>
       </PageCard>
+
+      {/* Company-level facts shared by every opportunity (and by the
+          Service Scoping tool). Editable by anyone with access. */}
+      <CompanyProfileCard companyId={company.id} />
 
       {/* Deal pipeline for this company — every stage. */}
       <OpportunityInline companyId={company.id} />

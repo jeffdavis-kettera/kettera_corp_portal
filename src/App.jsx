@@ -38,6 +38,10 @@ import ContactDetail from './components/crm/ContactDetail.jsx';
 import CrmConfig from './components/crm/CrmConfig.jsx';
 import ActivityForm from './components/crm/ActivityForm.jsx';
 import OpportunityForm from './components/crm/OpportunityForm.jsx';
+import OpportunityPageShell from './components/crm/OpportunityPageShell.jsx';
+import OpportunityDetails from './components/crm/OpportunityDetails.jsx';
+import OpportunityTools from './components/crm/opportunityTools/OpportunityTools.jsx';
+import { OPPORTUNITY_TOOLS } from './components/crm/opportunityTools/registry.js';
 import Projects from './components/pm/Projects.jsx';
 import ProjectForm from './components/pm/ProjectForm.jsx';
 import PmConfig from './components/pm/PmConfig.jsx';
@@ -121,9 +125,12 @@ export default function App() {
         <Route path="documents" element={<CompanyDocuments />} />
       </Route>
 
-      {/* Forms + drill-in detail pages live OUTSIDE the tab shell
-          so they get their own focused PageLayout. Save/Cancel
-          routes back to whichever tab is contextually right. */}
+      {/* Forms + drill-in detail pages live OUTSIDE the company tab
+          shell so they get their own focused PageLayout. Every form
+          follows the same pattern: create lands on the new record,
+          save stays put with "Saved.", Back and Delete go to the
+          record's tab. The new/edit `key`s remount a shared form when
+          a create lands on the record it just made. */}
       <Route
         path="/modules/crm/companies/:id/contacts/add"
         element={<ProtectedRoute><AddContact /></ProtectedRoute>}
@@ -136,17 +143,28 @@ export default function App() {
         path="/modules/crm/companies/:id/opportunities/new"
         element={<ProtectedRoute><OpportunityForm /></ProtectedRoute>}
       />
+
+      {/* Opportunity detail — its own tab shell (Details | Tools), built
+          like the company one. Tool routes come from the portal's tool
+          registry; the API decides which tools exist. */}
       <Route
         path="/modules/crm/companies/:id/opportunities/:oppId"
-        element={<ProtectedRoute><OpportunityForm /></ProtectedRoute>}
-      />
+        element={<ProtectedRoute><OpportunityPageShell /></ProtectedRoute>}
+      >
+        <Route index element={<OpportunityDetails />} />
+        <Route path="tools" element={<OpportunityTools />} />
+        {Object.entries(OPPORTUNITY_TOOLS).map(([key, tool]) => {
+          const ToolScreen = tool.component;
+          return <Route key={key} path={`tools/${key}`} element={<ToolScreen />} />;
+        })}
+      </Route>
       <Route
         path="/modules/crm/companies/:id/activities/new"
-        element={<ProtectedRoute><ActivityForm /></ProtectedRoute>}
+        element={<ProtectedRoute><ActivityForm key="new" /></ProtectedRoute>}
       />
       <Route
         path="/modules/crm/companies/:id/activities/:activityId"
-        element={<ProtectedRoute><ActivityForm /></ProtectedRoute>}
+        element={<ProtectedRoute><ActivityForm key="edit" /></ProtectedRoute>}
       />
       <Route
         path="/modules/crm/companies/:id/documents/upload"

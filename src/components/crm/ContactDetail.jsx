@@ -103,7 +103,7 @@ export default function ContactDetail() {
         { method: 'DELETE' }
       );
       if (res.status === 204) {
-        navigate(`/modules/crm/companies/${companyId}`, { replace: true });
+        navigate(`/modules/crm/companies/${companyId}/contacts`, { replace: true });
         return;
       }
       const body = await res.json().catch(() => ({}));
@@ -124,8 +124,8 @@ export default function ContactDetail() {
         <PageCard className="profile-card--form">
           <div className="error-message"><p>{error || 'Contact not found.'}</p></div>
           <FormActions
-            onCancel={() => navigate(`/modules/crm/companies/${companyId}`)}
-            cancelText="Back to Company" submitText="" disableSubmit />
+            onCancel={() => navigate(`/modules/crm/companies/${companyId}/contacts`)}
+            cancelText="Back to Contacts" submitText="" disableSubmit />
         </PageCard>
       </PageLayout>
     );
@@ -195,8 +195,8 @@ export default function ContactDetail() {
                       disabled={saving} />
           </div>
           <FormActions
-            onCancel={() => navigate(`/modules/crm/companies/${companyId}`)}
-            cancelText="Back to Company"
+            onCancel={() => navigate(`/modules/crm/companies/${companyId}/contacts`)}
+            cancelText="Back to Contacts"
             submitText="Save changes"
             submittingText="Saving…"
             isSubmitting={saving}

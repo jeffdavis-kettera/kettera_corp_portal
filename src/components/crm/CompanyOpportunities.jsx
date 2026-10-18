@@ -14,6 +14,7 @@ import { authenticatedFetchJson } from '../../utils/api.js';
 import {
   STAGES, STAGE_BADGE_CLASS, formatCurrency, formatDate,
 } from './opportunityStages.js';
+import { serviceLabel } from './services.js';
 
 const PAGE_SIZE = 50;
 
@@ -155,6 +156,7 @@ export default function CompanyOpportunities() {
                 <th style={{ width: '80px', textAlign: 'right' }}>%</th>
                 <th style={{ width: '130px' }}>Expected close</th>
                 {!contactId && <th style={{ width: '180px' }}>Primary contact</th>}
+                <th style={{ width: '190px' }}>Lead service</th>
               </tr>
             </thead>
             <tbody>
@@ -180,6 +182,9 @@ export default function CompanyOpportunities() {
                       {o.primaryContactName || <span className="muted">—</span>}
                     </td>
                   )}
+                  <td className={o.leadService ? undefined : 'muted'}>
+                    {o.leadService ? serviceLabel(o.leadService) : '—'}
+                  </td>
                 </tr>
               ))}
             </tbody>

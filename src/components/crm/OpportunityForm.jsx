@@ -1,37 +1,31 @@
-// OpportunityForm — one component for both create and edit,
-// mirroring ActivityForm's shape. Routes:
-//   /modules/crm/companies/:id/opportunities/new?contactId=X   create
-//   /modules/crm/companies/:id/opportunities/:oppId            edit
+// OpportunityForm — create a new opportunity. Route:
+//   /modules/crm/companies/:id/opportunities/new?contactId=X
 //
-// Fields: name, stage, value, currency, probability, expected +
-// actual close date, primary contact (dropdown of contacts under
-// the company), notes.
+// Editing happens on the opportunity's own page (OpportunityPageShell
+// → OpportunityDetails); creating stays a standalone form because
+// there's nothing to put in the tabs until the opportunity exists.
+// Saving lands on the new opportunity's Details tab.
 //
-// The API auto-fills actual_close_date when stage crosses into
-// Won/Lost, so this form's actualCloseDate field is optional —
-// user can override or backfill, but empty is fine.
+// The API auto-fills actual_close_date when stage is Won/Lost, so the
+// actualCloseDate field is optional.
 
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import PageLayout from '../PageLayout.jsx';
 import PageCard from '../PageCard.jsx';
 import FormActions from '../FormActions.jsx';
 import { API_BASE_URL } from '../../utils/config.js';
-import { authenticatedFetchJson, authenticatedFetch } from '../../utils/api.js';
-import { STAGES, CLOSED_STAGES, toDateInputValue } from './opportunityStages.js';
+import { authenticatedFetchJson } from '../../utils/api.js';
+import { STAGES, CLOSED_STAGES } from './opportunityStages.js';
 
 export default function OpportunityForm() {
-  const { id: companyId, oppId } = useParams();
+  const { id: companyId } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const listUrl = `/modules/crm/companies/${companyId}/opportunities`;
 
-  const isEdit = Boolean(oppId);
-  const initialContactId = searchParams.get('contactId') || '';
-
-  const [loading, setLoading] = useState(isEdit);
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
-  const [deleting, setDeleting] = useState(false);
 
   const [contacts, setContacts] = useState([]);
   const [name, setName] = useState('');
@@ -41,63 +35,20 @@ export default function OpportunityForm() {
   const [probability, setProbability] = useState('');
   const [expectedCloseDate, setExpectedCloseDate] = useState('');
   const [actualCloseDate, setActualCloseDate] = useState('');
-  const [primaryContactId, setPrimaryContactId] = useState(initialContactId);
+  const [primaryContactId, setPrimaryContactId] = useState(searchParams.get('contactId') || '');
   const [notes, setNotes] = useState('');
 
-  // Load contacts for the primary-contact dropdown.
+  // Contacts for the primary-contact dropdown.
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const data = await authenticatedFetchJson(
-          `${API_BASE_URL}/crm/companies/${companyId}/contacts`
-        );
+        const data = await authenticatedFetchJson(`${API_BASE_URL}/crm/companies/${companyId}/contacts`);
         if (!cancelled) setContacts(data.contacts || []);
       } catch { /* non-fatal */ }
     })();
     return () => { cancelled = true; };
   }, [companyId]);
-
-  // Edit mode: load the existing opportunity.
-  useEffect(() => {
-    if (!isEdit) return;
-    let cancelled = false;
-    (async () => {
-      setLoading(true); setError(null);
-      try {
-        const o = await authenticatedFetchJson(
-          `${API_BASE_URL}/crm/companies/${companyId}/opportunities/${oppId}`
-        );
-        if (cancelled) return;
-        setName(o.name);
-        setStage(o.stage);
-        setValue(o.value == null ? '' : String(o.value));
-        setCurrency(o.currency || 'USD');
-        setProbability(o.probability == null ? '' : String(o.probability));
-        setExpectedCloseDate(toDateInputValue(o.expectedCloseDate));
-        setActualCloseDate(toDateInputValue(o.actualCloseDate));
-        setPrimaryContactId(o.primaryContactId ? String(o.primaryContactId) : '');
-        setNotes(o.notes || '');
-      } catch (err) {
-        if (!cancelled) setError(err.message || 'Failed to load opportunity.');
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [isEdit, companyId, oppId]);
-
-  const buildBody = useCallback(() => ({
-    name: name.trim(),
-    stage,
-    value: value === '' ? null : Number(value),
-    currency: (currency || 'USD').toUpperCase(),
-    probability: probability === '' ? null : Number(probability),
-    expectedCloseDate: expectedCloseDate || null,
-    actualCloseDate: actualCloseDate || null,
-    primaryContactId: primaryContactId ? Number(primaryContactId) : null,
-    notes: notes.trim() || null,
-  }), [name, stage, value, currency, probability, expectedCloseDate, actualCloseDate, primaryContactId, notes]);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -106,21 +57,24 @@ export default function OpportunityForm() {
     if (!name.trim()) return setError('Name is required.');
     setSubmitting(true);
     try {
-      if (isEdit) {
-        await authenticatedFetchJson(
-          `${API_BASE_URL}/crm/companies/${companyId}/opportunities/${oppId}`,
-          { method: 'PUT', body: buildBody() }
-        );
-      } else {
-        await authenticatedFetchJson(
-          `${API_BASE_URL}/crm/companies/${companyId}/opportunities`,
-          { method: 'POST', body: buildBody() }
-        );
-      }
-      const backTo = primaryContactId
-        ? `/modules/crm/companies/${companyId}/contacts/${primaryContactId}`
-        : `/modules/crm/companies/${companyId}`;
-      navigate(backTo, { replace: true });
+      const created = await authenticatedFetchJson(
+        `${API_BASE_URL}/crm/companies/${companyId}/opportunities`,
+        {
+          method: 'POST',
+          body: {
+            name: name.trim(),
+            stage,
+            value: value === '' ? null : Number(value),
+            currency: (currency || 'USD').toUpperCase(),
+            probability: probability === '' ? null : Number(probability),
+            expectedCloseDate: expectedCloseDate || null,
+            actualCloseDate: actualCloseDate || null,
+            primaryContactId: primaryContactId ? Number(primaryContactId) : null,
+            notes: notes.trim() || null,
+          },
+        }
+      );
+      navigate(`${listUrl}/${created.id}`, { replace: true });
     } catch (err) {
       setError(err.message || 'Save failed.');
     } finally {
@@ -128,50 +82,10 @@ export default function OpportunityForm() {
     }
   }
 
-  async function handleDelete() {
-    if (!isEdit || deleting) return;
-    if (!window.confirm(`Delete opportunity "${name}"? This cannot be undone.`)) return;
-    setDeleting(true); setError(null);
-    try {
-      const res = await authenticatedFetch(
-        `${API_BASE_URL}/crm/companies/${companyId}/opportunities/${oppId}`,
-        { method: 'DELETE' }
-      );
-      if (res.status !== 204) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.error || `Delete failed (${res.status}).`);
-      }
-      navigate(`/modules/crm/companies/${companyId}`, { replace: true });
-    } catch (err) {
-      setError(err.message || 'Delete failed.');
-    } finally {
-      setDeleting(false);
-    }
-  }
-
-  if (loading) {
-    return <PageLayout title="Opportunity"><div className="spinner" role="status" aria-label="Loading" /></PageLayout>;
-  }
-
   const enteringClosed = CLOSED_STAGES.has(stage);
 
   return (
-    <PageLayout
-      title={isEdit ? 'Edit Opportunity' : 'Add Opportunity'}
-      actions={
-        isEdit ? (
-          <button
-            type="button"
-            className="cancel-button"
-            onClick={handleDelete}
-            disabled={deleting}
-            style={{ color: 'var(--color-danger-tx)', borderColor: 'var(--color-danger-tx)' }}
-          >
-            {deleting ? 'Deleting…' : 'Delete'}
-          </button>
-        ) : null
-      }
-    >
+    <PageLayout title="Add Opportunity">
       <PageCard className="profile-card--form">
         {error && <div className="error-message"><p>{error}</p></div>}
 
@@ -259,15 +173,10 @@ export default function OpportunityForm() {
           </div>
 
           <FormActions
-            onCancel={() => {
-              const backTo = primaryContactId
-                ? `/modules/crm/companies/${companyId}/contacts/${primaryContactId}`
-                : `/modules/crm/companies/${companyId}`;
-              navigate(backTo);
-            }}
+            onCancel={() => navigate(listUrl)}
             cancelText="Cancel"
-            submitText={isEdit ? 'Save changes' : 'Add opportunity'}
-            submittingText={isEdit ? 'Saving…' : 'Creating…'}
+            submitText="Add opportunity"
+            submittingText="Creating…"
             isSubmitting={submitting}
           />
         </form>
