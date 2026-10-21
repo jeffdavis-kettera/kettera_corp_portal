@@ -21,7 +21,7 @@ const sameSet = (a, b) => a.length === b.length && a.every((x) => b.includes(x))
 
 export default function ScopingGrid({
   result, catalog, decision, version, decidedAt, decidedByName, progress,
-  onSave, onReload, onDirtyChange,
+  onSave, onReload, onDirtyChange, readOnly = false,
 }) {
   const storedServices = decision?.services || [];
   const storedLead = decision?.lead ?? null;
@@ -36,7 +36,7 @@ export default function ScopingGrid({
   const [conflict, setConflict] = useState(false);
   const [success, setSuccess] = useState(null);
 
-  const dirty = !sameSet(selected, storedServices) || lead !== storedLead || rationale.trim() !== (storedRationale || '').trim();
+  const dirty = !readOnly && (!sameSet(selected, storedServices) || lead !== storedLead || rationale.trim() !== (storedRationale || '').trim());
 
   // Follow the stored decision when it changes underneath us (a save
   // here, or a Reload after a conflict). The grid isn't remounted for
@@ -99,9 +99,9 @@ export default function ScopingGrid({
   return (
     <form onSubmit={handleSave}>
       <p style={{ color: 'var(--color-text-secondary)', marginTop: 0 }}>
-        How well each service fits what we know so far. Ratings are suggestions — tick
-        the services to pitch and mark the lead; any service can be chosen whatever its
-        rating. Click a cell to see the answers behind it.
+        {readOnly
+          ? 'How each service rates under the current scoring rules. Click a cell to see the answers behind it.'
+          : 'How well each service fits what we know so far. Ratings are suggestions — tick the services to pitch and mark the lead; any service can be chosen whatever its rating. Click a cell to see the answers behind it.'}
       </p>
       {answeredTotal.t > 0 && answeredTotal.a < answeredTotal.t / 2 && (
         <div className="info-banner" role="note">
@@ -160,6 +160,7 @@ export default function ScopingGrid({
                         {cell?.confidence} confidence · {cell?.answered}/{cell?.total} answered
                         {moved && ` · was ${previous ?? 'unrated'}`}
                       </div>
+                      {!readOnly && (
                       <div className="scoping-cell__controls" onClick={(e) => e.stopPropagation()}>
                         <label>
                           <input type="checkbox" checked={isSelected} onChange={() => togglePitch(code)} disabled={saving} />
@@ -172,6 +173,7 @@ export default function ScopingGrid({
                           Lead
                         </label>
                       </div>
+                      )}
                     </td>
                   );
                 })}
@@ -208,6 +210,7 @@ export default function ScopingGrid({
         </div>
       )}
 
+      {!readOnly && (<>
       <div className="form-group" style={{ marginTop: 'var(--space-5)' }}>
         <label htmlFor="rationale">Rationale</label>
         <textarea id="rationale" rows="4" value={rationale}
@@ -226,6 +229,7 @@ export default function ScopingGrid({
           {saving ? 'Saving…' : 'Save'}
         </button>
       </div>
+      </>)}
     </form>
   );
 }

@@ -26,8 +26,9 @@ export default function QuestionField({
   showNote = false, meta = null, conflict = false, disabled = false,
 }) {
   const [noteOpen, setNoteOpen] = useState(Boolean(note));
-  const id = `q-${question.key.replace(/\W/g, '-')}`;
+  const id = `q-${String(question.key || 'new').replace(/\W/g, '-')}`;
   const noteVisible = showNote && (noteOpen || Boolean(note));
+  const options = question.options || [];
 
   function renderControl() {
     switch (question.type) {
@@ -35,7 +36,7 @@ export default function QuestionField({
       case 'agree':
         return (
           <div className={`checkbox-list${question.type === 'agree' ? ' checkbox-list--row' : ''}`} role="radiogroup" aria-labelledby={`${id}-label`}>
-            {question.options.map((o) => (
+            {options.map((o) => (
               <label key={o.value} className="checkbox-list__item">
                 <input type="radio" name={id} value={o.value}
                        checked={value === o.value}
@@ -58,14 +59,14 @@ export default function QuestionField({
         const selected = new Set(Array.isArray(value) ? value : []);
         return (
           <div className="checkbox-list" role="group" aria-labelledby={`${id}-label`}>
-            {question.options.map((o) => (
+            {options.map((o) => (
               <label key={o.value} className="checkbox-list__item">
                 <input type="checkbox" value={o.value}
                        checked={selected.has(o.value)}
                        onChange={(e) => {
                          const next = new Set(selected);
                          if (e.target.checked) next.add(o.value); else next.delete(o.value);
-                         onChange(next.size ? question.options.map((x) => x.value).filter((v) => next.has(v)) : null);
+                         onChange(next.size ? options.map((x) => x.value).filter((v) => next.has(v)) : null);
                        }}
                        disabled={disabled} />
                 {o.label}
@@ -112,7 +113,7 @@ export default function QuestionField({
                             }}
                             disabled={disabled}>
                       <option value={UNKNOWN}>Unknown</option>
-                      {question.options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                      {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                     </select>
                   </td>
                 </tr>

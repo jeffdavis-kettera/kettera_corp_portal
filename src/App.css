@@ -989,6 +989,55 @@ h1, h2, h3, h4 {
 .scoping-detail h4 { margin: 0 0 var(--space-2); }
 .scoping-detail ul { margin: var(--space-1) 0 var(--space-3); padding-left: var(--space-5); }
 
+/* ── Assessment configuration screens ────────────────────────── */
+.config-list-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin: 0 0 var(--space-4);
+}
+.threshold-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-4);
+}
+.threshold-grid .form-group { margin: 0; }
+.signals-option {
+  padding: var(--space-3) 0;
+  border-top: 1px solid var(--color-border);
+}
+.signals-option__head { margin-bottom: var(--space-2); }
+.signal-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+.signal-row select { flex: 1 1 240px; }
+.signal-row input[type="number"] { width: 90px; flex: 0 0 auto; }
+.signal-row select,
+.signal-row input {
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--font-size-sm);
+}
+.ordered-picker .candidate-list { margin-bottom: 0; }
+.data-table td input[type="text"] {
+  width: 100%;
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--font-size-sm);
+}
+
 /* ── Service chips (services we're pitching) ─────────────────── */
 .service-chips { display: flex; flex-wrap: wrap; gap: var(--space-2); }
 .service-chip {

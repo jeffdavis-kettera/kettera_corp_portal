@@ -42,6 +42,14 @@ import OpportunityPageShell from './components/crm/OpportunityPageShell.jsx';
 import OpportunityDetails from './components/crm/OpportunityDetails.jsx';
 import OpportunityTools from './components/crm/opportunityTools/OpportunityTools.jsx';
 import { OPPORTUNITY_TOOLS } from './components/crm/opportunityTools/registry.js';
+import AssessmentConfigShell from './components/crm/config/AssessmentConfigShell.jsx';
+import AssessmentsList from './components/crm/config/AssessmentsList.jsx';
+import AssessmentEditor from './components/crm/config/AssessmentEditor.jsx';
+import QuestionSetsList from './components/crm/config/QuestionSetsList.jsx';
+import QuestionSetEditor from './components/crm/config/QuestionSetEditor.jsx';
+import QuestionsList from './components/crm/config/QuestionsList.jsx';
+import QuestionEditor from './components/crm/config/QuestionEditor.jsx';
+import ScoringPage from './components/crm/config/ScoringPage.jsx';
 import Projects from './components/pm/Projects.jsx';
 import ProjectForm from './components/pm/ProjectForm.jsx';
 import PmConfig from './components/pm/PmConfig.jsx';
@@ -107,6 +115,25 @@ export default function App() {
         path="/modules/crm/users/add"
         element={<ProtectedRoute><AddModuleUser key="crm" module={CRM_MODULE} /></ProtectedRoute>}
       />
+
+      {/* CRM Configuration → Assessments: a tab shell for the lists;
+          editors get their own pages. Static segments (new, sets,
+          questions, scoring) outrank :id. */}
+      <Route
+        path="/modules/crm/config/assessments"
+        element={<ProtectedRoute><AssessmentConfigShell /></ProtectedRoute>}
+      >
+        <Route index element={<AssessmentsList />} />
+        <Route path="sets" element={<QuestionSetsList />} />
+        <Route path="questions" element={<QuestionsList />} />
+        <Route path="scoring" element={<ScoringPage />} />
+      </Route>
+      <Route path="/modules/crm/config/assessments/new" element={<ProtectedRoute><AssessmentEditor key="new" /></ProtectedRoute>} />
+      <Route path="/modules/crm/config/assessments/sets/new" element={<ProtectedRoute><QuestionSetEditor key="new" /></ProtectedRoute>} />
+      <Route path="/modules/crm/config/assessments/sets/:id" element={<ProtectedRoute><QuestionSetEditor key="edit" /></ProtectedRoute>} />
+      <Route path="/modules/crm/config/assessments/questions/new" element={<ProtectedRoute><QuestionEditor key="new" /></ProtectedRoute>} />
+      <Route path="/modules/crm/config/assessments/questions/:id" element={<ProtectedRoute><QuestionEditor key="edit" /></ProtectedRoute>} />
+      <Route path="/modules/crm/config/assessments/:id" element={<ProtectedRoute><AssessmentEditor key="edit" /></ProtectedRoute>} />
 
       {/* Company detail — nested tab shell.
           The parent element (CompanyPageShell) renders PageLayout,

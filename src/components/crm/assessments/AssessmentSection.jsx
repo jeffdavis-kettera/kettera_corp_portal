@@ -7,7 +7,7 @@
 //   assessment    — public assessment from the API (sections → questions, usedBy)
 //   answers       — map key → { value, note, updatedAt, updatedByName }; may
 //                   hold more keys than this assessment uses
-//   save(changes) — async; receives [{ key, value, note?, expectedUpdatedAt }]
+//   save(changes) — async; receives [{ key, value, note, expectedUpdatedAt }]
 //                   and resolves to the fresh answers map for these keys
 //   onSaved(answers), onReload(), onDirtyChange(bool)
 //   disabled
@@ -17,11 +17,20 @@
 // and the message offers Reload; the user's other unsaved edits are
 // kept.
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import QuestionField from './QuestionField.jsx';
 import { formatDateTime } from '../opportunityStages.js';
 
 const same = (a, b) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+
+function metaFor(question, stored) {
+  if (!stored.updatedAt) return null;
+  let text = `Updated ${formatDateTime(stored.updatedAt)}${stored.updatedByName ? ` by ${stored.updatedByName}` : ''}`;
+  if (question.wordingChangedAt && new Date(question.wordingChangedAt) > new Date(stored.updatedAt)) {
+    text += ' · the wording of this question changed after it was answered';
+  }
+  return text;
+}
 
 export default function AssessmentSection({
   assessment, answers, save, onSaved, onReload, onDirtyChange, disabled = false,
@@ -32,11 +41,6 @@ export default function AssessmentSection({
   const [success, setSuccess] = useState(null);
   const [conflictKeys, setConflictKeys] = useState([]);
 
-  const questions = useMemo(
-    () => Object.fromEntries(assessment.sections.flatMap((s) => s.questions.map((q) => [q.key, q]))),
-    [assessment]
-  );
-
   const stored = (key) => answers[key] || { value: null, note: null };
   const current = (key) => ({
     value: key in draft ? draft[key].value : stored(key).value,
@@ -45,7 +49,7 @@ export default function AssessmentSection({
 
   const changedKeys = Object.keys(draft).filter((key) => {
     const s = stored(key);
-    return !same(draft[key].value, s.value) || (questions[key]?.scope !== 'company' && !same(draft[key].note, s.note));
+    return !same(draft[key].value, s.value) || !same(draft[key].note, s.note);
   });
   const dirty = changedKeys.length > 0;
 
@@ -74,7 +78,7 @@ export default function AssessmentSection({
       const changes = changedKeys.map((key) => ({
         key,
         value: draft[key].value,
-        ...(questions[key]?.scope === 'company' ? {} : { note: draft[key].note ?? null }),
+        note: draft[key].note ?? null,
         expectedUpdatedAt: stored(key).updatedAt ?? null,
       }));
       const fresh = await save(changes);
@@ -133,9 +137,6 @@ export default function AssessmentSection({
         const visible = section.questions.filter((q) => !q.retired || stored(q.key).value != null);
         if (visible.length === 0) return null;
         const companySection = visible.every((q) => q.scope === 'company');
-        const profileStamp = companySection
-          ? visible.map((q) => stored(q.key)).find((a) => a.updatedAt)
-          : null;
         return (
           <section key={section.key} className="assessment-section">
             {(section.title || section.description || companySection) && (
@@ -147,7 +148,6 @@ export default function AssessmentSection({
                 {companySection && (
                   <span className="assessment-section__shared">
                     Stored on the company record · shared by every opportunity
-                    {profileStamp && ` · updated ${formatDateTime(profileStamp.updatedAt)}${profileStamp.updatedByName ? ` by ${profileStamp.updatedByName}` : ''}`}
                   </span>
                 )}
               </div>
@@ -155,8 +155,6 @@ export default function AssessmentSection({
             <div className="form-stack">
               {visible.map((q) => {
                 const cur = current(q.key);
-                const s = stored(q.key);
-                const isCompany = q.scope === 'company';
                 return (
                   <QuestionField
                     key={q.key}
@@ -165,10 +163,8 @@ export default function AssessmentSection({
                     note={cur.note}
                     onChange={(v) => setValue(q.key, v)}
                     onNoteChange={(n) => setNote(q.key, n)}
-                    showNote={!isCompany}
-                    meta={!isCompany && s.updatedAt
-                      ? `Updated ${formatDateTime(s.updatedAt)}${s.updatedByName ? ` by ${s.updatedByName}` : ''}`
-                      : null}
+                    showNote
+                    meta={metaFor(q, stored(q.key))}
                     conflict={conflictKeys.includes(q.key)}
                     disabled={disabled || saving || q.retired}
                   />

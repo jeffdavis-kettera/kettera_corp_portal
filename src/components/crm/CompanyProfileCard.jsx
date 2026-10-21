@@ -31,7 +31,7 @@ export default function CompanyProfileCard({ companyId }) {
   const save = useCallback(async (changes) => {
     const fresh = await authenticatedFetchJson(url, {
       method: 'PUT',
-      body: { answers: changes.map(({ key, value, expectedUpdatedAt }) => ({ key, value, expectedUpdatedAt })) },
+      body: { answers: changes.map(({ key, value, note, expectedUpdatedAt }) => ({ key, value, note, expectedUpdatedAt })) },
     });
     setProfile(fresh);
     return fresh.answers;
