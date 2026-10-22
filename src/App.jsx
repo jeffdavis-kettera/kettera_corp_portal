@@ -182,7 +182,7 @@ export default function App() {
         <Route path="tools" element={<OpportunityTools />} />
         {Object.entries(OPPORTUNITY_TOOLS).map(([key, tool]) => {
           const ToolScreen = tool.component;
-          return <Route key={key} path={`tools/${key}`} element={<ToolScreen />} />;
+          return <Route key={key} path={`tools/${key}`} element={<ToolScreen {...(tool.props || {})} />} />;
         })}
       </Route>
       <Route
