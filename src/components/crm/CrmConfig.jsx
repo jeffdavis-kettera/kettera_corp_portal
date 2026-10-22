@@ -71,6 +71,20 @@ export default function CrmConfig() {
         <button
           type="button"
           className="module-card module-card--link"
+          onClick={() => navigate('/modules/crm/config/templates')}
+          style={{ textAlign: 'left', cursor: 'pointer', font: 'inherit' }}
+        >
+          <h3>Templates</h3>
+          <p style={{ color: 'var(--color-text-secondary)', margin: '0 0 var(--space-2)' }}>
+            Upload the Word and PowerPoint files the proposal and SOW generator fills in — SOW with MSA,
+            SOW without MSA, and the proposal deck — and choose which version is current.
+          </p>
+          <span className="module-card__role">Admin only</span>
+        </button>
+
+        <button
+          type="button"
+          className="module-card module-card--link"
           onClick={() => navigate('/modules/crm/config/ai-drafting')}
           style={{ textAlign: 'left', cursor: 'pointer', font: 'inherit' }}
         >

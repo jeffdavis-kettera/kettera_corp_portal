@@ -52,6 +52,7 @@ import QuestionsList from './components/crm/config/QuestionsList.jsx';
 import QuestionEditor from './components/crm/config/QuestionEditor.jsx';
 import ScoringPage from './components/crm/config/ScoringPage.jsx';
 import AiDrafting from './components/AiDrafting.jsx';
+import TemplatesPage from './components/crm/config/TemplatesPage.jsx';
 import ModuleAiDrafting from './components/modules/ModuleAiDrafting.jsx';
 import Projects from './components/pm/Projects.jsx';
 import ProjectForm from './components/pm/ProjectForm.jsx';
@@ -130,6 +131,7 @@ export default function App() {
           editors get their own pages. Static segments (new, sets,
           questions, scoring) outrank :id. */}
       <Route path="/modules/crm/config/ai-drafting" element={<ProtectedRoute><ModuleAiDrafting key="crm" module={CRM_MODULE} /></ProtectedRoute>} />
+      <Route path="/modules/crm/config/templates" element={<ProtectedRoute><TemplatesPage /></ProtectedRoute>} />
       <Route
         path="/modules/crm/config/assessments"
         element={<ProtectedRoute><AssessmentConfigShell /></ProtectedRoute>}

@@ -1208,6 +1208,11 @@ h1, h2, h3, h4 {
   margin: 0;
 }
 
+/* ── Templates (CRM Configuration) ───────────────────────────── */
+.template-upload { margin-top: var(--space-3); }
+.template-upload .form-group { margin-bottom: var(--space-3); }
+.template-upload input[type="file"] { padding: var(--space-2) 0; }
+
 /* ── Service chips (services we're pitching) ─────────────────── */
 .service-chips { display: flex; flex-wrap: wrap; gap: var(--space-2); }
 .service-chip {
