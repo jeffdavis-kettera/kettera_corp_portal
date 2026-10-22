@@ -1213,6 +1213,12 @@ h1, h2, h3, h4 {
 .template-upload .form-group { margin-bottom: var(--space-3); }
 .template-upload input[type="file"] { padding: var(--space-2) 0; }
 
+.tag-ref { font-size: var(--font-size-sm); }
+.tag-ref summary { cursor: pointer; font-weight: 600; }
+.tag-ref code { background: var(--color-accent-tint); padding: 0 4px; border-radius: 3px; }
+.tag-ref li { margin: 2px 0; }
+.proposal-rows td input { width: 100%; }
+
 /* ── Service chips (services we're pitching) ─────────────────── */
 .service-chips { display: flex; flex-wrap: wrap; gap: var(--space-2); }
 .service-chip {

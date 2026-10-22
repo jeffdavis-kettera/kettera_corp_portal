@@ -84,6 +84,43 @@ function UploadForm({ type, maxBytes, busy, onUpload }) {
   );
 }
 
+function TagReference({ type }) {
+  const { single, loops } = type.catalog;
+  const Fields = ({ fields, depth = 0 }) => (
+    <ul style={{ margin: 'var(--space-1) 0 0', paddingLeft: 'var(--space-5)' }}>
+      {fields.map((f) => (
+        <li key={f.tag}>
+          <code>{f.fields ? `{{#${f.tag}}}…{{/${f.tag}}}` : `{{${f.tag}}}`}</code> <span className="muted">— {f.description}</span>
+          {f.fields && depth < 2 && <Fields fields={f.fields} depth={depth + 1} />}
+        </li>
+      ))}
+    </ul>
+  );
+  return (
+    <details className="tag-ref" style={{ marginTop: 'var(--space-3)' }}>
+      <summary>Tags this template can use</summary>
+      <p className="muted" style={{ margin: 'var(--space-2) 0' }}>
+        Write a tag as <code>{'{{tag}}'}</code>. For a table row, paragraph or bullet that repeats per item, put <code>{'{{#loop}}'}</code> at the
+        start and <code>{'{{/loop}}'}</code> at the end and use the item's fields inside. Multi-line text keeps its line breaks; dates read
+        "October 22, 2026"; amounts read "$12,500.00".
+      </p>
+      <strong>Values</strong>
+      <Fields fields={single} />
+      <strong style={{ display: 'block', marginTop: 'var(--space-2)' }}>Repeating sections</strong>
+      <Fields fields={loops} />
+    </details>
+  );
+}
+
+function UnknownTags({ t }) {
+  if (!t.unknownTags?.length) return null;
+  return (
+    <div style={{ color: 'var(--color-danger-tx)', fontSize: 'var(--font-size-xs)', marginTop: 'var(--space-1)' }}>
+      Uses tags the generator doesn't fill (they'll come out blank): {t.unknownTags.map((x) => `{{${x}}}`).join(', ')}
+    </div>
+  );
+}
+
 export default function TemplatesPage() {
   const navigate = useNavigate();
   useRequireCrmAdmin();
@@ -170,6 +207,8 @@ export default function TemplatesPage() {
                 <strong>Current:</strong> {type.current.label ? <>{type.current.label} <span className="muted">({type.current.originalFilename})</span></> : type.current.originalFilename}
                 <span className="muted"> · {formatBytes(type.current.sizeBytes)} · uploaded {who(type.current)}</span>
                 {type.current.notes && <div className="muted" style={{ fontSize: 'var(--font-size-sm)' }}>{type.current.notes}</div>}
+                {type.current.tags?.length > 0 && <div className="muted" style={{ fontSize: 'var(--font-size-xs)' }}>{type.current.tags.length} tags</div>}
+                <UnknownTags t={type.current} />
               </div>
               <span style={{ whiteSpace: 'nowrap' }}>
                 <button type="button" className="link-button" disabled={Boolean(busy)} onClick={() => download(type.current)}>Download</button>
@@ -184,6 +223,7 @@ export default function TemplatesPage() {
           )}
 
           <UploadForm type={type} maxBytes={view.maxBytes} busy={busy === type.code} onUpload={upload(type)} />
+          <TagReference type={type} />
 
           {type.history.length > 0 && (
             <div style={{ overflowX: 'auto', marginTop: 'var(--space-4)' }}>
@@ -203,6 +243,7 @@ export default function TemplatesPage() {
                         <strong>{t.label || t.originalFilename}</strong>
                         {t.label && <div className="muted" style={{ fontSize: 'var(--font-size-xs)' }}>{t.originalFilename}</div>}
                         {t.notes && <div className="muted" style={{ fontSize: 'var(--font-size-xs)' }}>{t.notes}</div>}
+                        <UnknownTags t={t} />
                       </td>
                       <td className="muted">{formatBytes(t.sizeBytes)}</td>
                       <td className="muted">{who(t)}</td>
