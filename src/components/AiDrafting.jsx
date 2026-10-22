@@ -233,6 +233,14 @@ export default function AiDrafting() {
                   ? <>Connected in {testResult.latencyMs} ms — the model{testResult.model ? ` (${testResult.model})` : ''} replied “{testResult.reply}”.</>
                   : testResult.error}
               </p>
+              {testResult.ok && testResult.adapted?.length > 0 && (
+                <p style={{ margin: '0 0 var(--space-2)' }}>
+                  It worked only after adjusting the request ({testResult.adapted.join(', ')}).
+                  {testResult.adapted.includes('max_completion_tokens') || testResult.adapted.includes('no temperature')
+                    ? ' Tick "Reasoning model" so every request is right the first time.'
+                    : testResult.adapted.includes('max_tokens') ? ' Untick "Reasoning model" so every request is right the first time.' : ''}
+                </p>
+              )}
               {testResult.url && <p className="muted" style={{ margin: 0, fontSize: 'var(--font-size-xs)', wordBreak: 'break-all' }}>Request: {testResult.url}</p>}
             </div>
           )}
