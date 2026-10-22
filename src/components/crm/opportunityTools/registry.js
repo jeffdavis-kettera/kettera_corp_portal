@@ -18,6 +18,9 @@ export const OPPORTUNITY_TOOLS = {
   'deliverables-ea-teach':         deliverables('deliverables-ea-teach'),
   'deliverables-apm-teach':        deliverables('deliverables-apm-teach'),
   'deliverables-innovation-teach': deliverables('deliverables-innovation-teach'),
+  'deliverables-ea-build':         deliverables('deliverables-ea-build'),
+  'deliverables-apm-build':        deliverables('deliverables-apm-build'),
+  'deliverables-innovation-build': deliverables('deliverables-innovation-build'),
 };
 
 export const TOOL_STATUS_LABEL = {

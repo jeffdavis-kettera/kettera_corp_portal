@@ -119,7 +119,7 @@ export default function DeliverablesPicker({ result, decision, version, onSave, 
             </span>
           </label>
           <span className={BAND_CLASS[item.band]}>
-            {item.band === 'NotIndicated' ? 'Not indicated' : item.band}{item.points > 0 && !item.isCore ? ` · ${item.points}` : ''}
+            {item.band === 'NotIndicated' ? 'Not indicated' : item.band}{item.points !== 0 && !item.isCore ? ` · ${item.points > 0 ? '+' : ''}${item.points}` : ''}
           </span>
           <button type="button" className="link-button" onClick={() => setOpenCode(open ? null : item.code)}>
             {open ? 'Hide' : 'Why?'}
@@ -131,7 +131,7 @@ export default function DeliverablesPicker({ result, decision, version, onSave, 
             {item.isCore && <p className="muted" style={{ margin: 0 }}>Included in every {''}engagement of this service.</p>}
             {item.contributors.length > 0 ? (
               <ul>
-                {item.contributors.map((c, i) => <li key={i}>{c.label} — <em>{c.answer}</em> (+{c.points})</li>)}
+                {item.contributors.map((c, i) => <li key={i}>{c.label} — <em>{c.answer}</em> ({c.points > 0 ? '+' : ''}{c.points})</li>)}
               </ul>
             ) : !item.isCore && <p className="muted" style={{ margin: 0 }}>No answers point to this yet.</p>}
           </div>

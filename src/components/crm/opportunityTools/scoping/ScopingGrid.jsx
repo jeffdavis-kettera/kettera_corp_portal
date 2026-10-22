@@ -194,14 +194,14 @@ export default function ScopingGrid({
               <strong>Why the need</strong>
               <ul>
                 {openCell.contributors.filter((c) => c.kind === 'need').map((c, i) => (
-                  <li key={i}>{c.label} — <em>{c.answer}</em> (+{c.points})</li>
+                  <li key={i}>{c.label} — <em>{c.answer}</em> ({c.points > 0 ? '+' : ''}{c.points})</li>
                 ))}
                 {openCell.contributors.every((c) => c.kind !== 'need') && <li className="muted">Nothing yet</li>}
               </ul>
               <strong>Why this engagement level</strong>
               <ul>
                 {openCell.contributors.filter((c) => c.kind === 'level').map((c, i) => (
-                  <li key={i}>{c.label} — <em>{c.answer}</em> (+{c.points})</li>
+                  <li key={i}>{c.label} — <em>{c.answer}</em> ({c.points > 0 ? '+' : ''}{c.points})</li>
                 ))}
                 {openCell.contributors.every((c) => c.kind !== 'level') && <li className="muted">Nothing yet</li>}
               </ul>
