@@ -41,6 +41,7 @@ import OpportunityForm from './components/crm/OpportunityForm.jsx';
 import OpportunityPageShell from './components/crm/OpportunityPageShell.jsx';
 import OpportunityDetails from './components/crm/OpportunityDetails.jsx';
 import OpportunityTools from './components/crm/opportunityTools/OpportunityTools.jsx';
+import OpportunityProposal from './components/crm/proposal/OpportunityProposal.jsx';
 import { OPPORTUNITY_TOOLS } from './components/crm/opportunityTools/registry.js';
 import AssessmentConfigShell from './components/crm/config/AssessmentConfigShell.jsx';
 import AssessmentsList from './components/crm/config/AssessmentsList.jsx';
@@ -180,6 +181,7 @@ export default function App() {
       >
         <Route index element={<OpportunityDetails />} />
         <Route path="tools" element={<OpportunityTools />} />
+        <Route path="proposal" element={<OpportunityProposal />} />
         {Object.entries(OPPORTUNITY_TOOLS).map(([key, tool]) => {
           const ToolScreen = tool.component;
           return <Route key={key} path={`tools/${key}`} element={<ToolScreen {...(tool.props || {})} />} />;

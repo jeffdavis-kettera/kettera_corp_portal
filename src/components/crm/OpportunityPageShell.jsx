@@ -4,8 +4,8 @@
 //   2. Header: the opportunity name, with Back to Opportunities and
 //      Delete in the actions slot (so both work from every tab and
 //      from inside every tool).
-//   3. Tab strip: Details | Tools. Tools stays highlighted while a
-//      tool is open underneath it.
+//   3. Tab strip: Details | Tools | Proposal. Tools stays highlighted
+//      while a tool is open underneath it.
 //   4. A summary line (company, stage, value, expected close) so a
 //      tool page always shows which deal it belongs to.
 //
@@ -108,6 +108,7 @@ export default function OpportunityPageShell() {
       <nav className="tab-strip" aria-label="Opportunity sections">
         <NavLink to={tabBase} end className={tabClass}>Details</NavLink>
         <NavLink to={`${tabBase}/tools`} className={tabClass}>Tools</NavLink>
+        <NavLink to={`${tabBase}/proposal`} className={tabClass}>Proposal</NavLink>
       </nav>
 
       <div className="record-summary">

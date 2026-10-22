@@ -1140,6 +1140,42 @@ h1, h2, h3, h4 {
 .band-chip--consider    { background: var(--color-warning-bg); color: var(--color-warning-tx); }
 .band-chip--not         { background: var(--color-bg-alt);     color: var(--color-text-secondary); }
 
+/* ── Proposal summary ────────────────────────────────────────── */
+.proposal-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-4);
+}
+.proposal-head__meta { flex: 1 1 200px; font-size: var(--font-size-sm); text-align: right; }
+.proposal-service.is-excluded { opacity: 0.6; }
+.proposal-service__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.proposal-service__pick {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  cursor: pointer;
+  font-size: var(--font-size-lg);
+}
+.proposal-service__pick input[type="checkbox"] { width: auto; margin: 0; }
+.proposal-service__tags {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: var(--font-size-sm);
+}
+.proposal-items tr.is-excluded td { opacity: 0.55; }
+.proposal-items td input[type="checkbox"] { width: auto; margin: 0; }
+.proposal-document h3 { margin: var(--space-5) 0 var(--space-2); }
+.proposal-document ul { padding-left: var(--space-5); }
+.proposal-document li { margin-bottom: var(--space-2); }
+
 /* ── Service chips (services we're pitching) ─────────────────── */
 .service-chips { display: flex; flex-wrap: wrap; gap: var(--space-2); }
 .service-chip {
