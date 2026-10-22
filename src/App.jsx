@@ -51,6 +51,8 @@ import QuestionSetEditor from './components/crm/config/QuestionSetEditor.jsx';
 import QuestionsList from './components/crm/config/QuestionsList.jsx';
 import QuestionEditor from './components/crm/config/QuestionEditor.jsx';
 import ScoringPage from './components/crm/config/ScoringPage.jsx';
+import AiDrafting from './components/AiDrafting.jsx';
+import ModuleAiDrafting from './components/modules/ModuleAiDrafting.jsx';
 import Projects from './components/pm/Projects.jsx';
 import ProjectForm from './components/pm/ProjectForm.jsx';
 import PmConfig from './components/pm/PmConfig.jsx';
@@ -88,6 +90,13 @@ export default function App() {
         element={<ProtectedRoute><UserDetail /></ProtectedRoute>}
       />
 
+      {/* AI drafting — application-wide model connection + voice (App Admins).
+          Modules opt in on their own Configuration pages. */}
+      <Route
+        path="/ai-drafting"
+        element={<ProtectedRoute><AiDrafting /></ProtectedRoute>}
+      />
+
       {/* CRM — company list + Add + Config + module-user management.
           The users + company-access screens are shared with Project
           Management; the `key` makes React remount them when moving
@@ -120,6 +129,7 @@ export default function App() {
       {/* CRM Configuration → Assessments: a tab shell for the lists;
           editors get their own pages. Static segments (new, sets,
           questions, scoring) outrank :id. */}
+      <Route path="/modules/crm/config/ai-drafting" element={<ProtectedRoute><ModuleAiDrafting key="crm" module={CRM_MODULE} /></ProtectedRoute>} />
       <Route
         path="/modules/crm/config/assessments"
         element={<ProtectedRoute><AssessmentConfigShell /></ProtectedRoute>}

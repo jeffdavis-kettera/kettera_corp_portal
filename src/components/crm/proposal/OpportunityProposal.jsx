@@ -11,6 +11,13 @@
 // doesn't yet reflect: deliverables a tool recommends that weren't
 // selected, services Scoping rates Strong that aren't pitched, and
 // pitched services with nothing chosen.
+//
+// AI drafting (when a CRM Admin has set it up): every text section
+// has "Draft with AI" / "Rewrite with AI" with optional instructions,
+// and the head card can draft every empty section at once. Requests
+// carry the unsaved draft, so what you've just unticked isn't
+// proposed back. The text lands in the field, Undo restores what was
+// there, and nothing is saved until you save.
 
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useOutletContext, useParams } from 'react-router-dom';
@@ -26,6 +33,13 @@ const BAND_CLASS = {
 };
 const BAND_LABEL = { NotIndicated: 'Not indicated' };
 
+const TEXT_FIELDS = [
+  { field: 'executiveSummary', label: 'Executive summary', rows: 5, placeholder: 'The situation, what we propose, and why it matters to them.' },
+  { field: 'approach', label: 'Approach', rows: 4, placeholder: 'How the engagement runs end to end.' },
+  { field: 'assumptions', label: 'Assumptions', rows: 3, placeholder: 'Access, availability, decisions we\'re relying on.' },
+  { field: 'timeline', label: 'Timeline', rows: 3, placeholder: 'Phases, start, duration, milestones.' },
+];
+
 /** The editable part of a view, as the dirty check and the save body see it. */
 function editable(view) {
   return {
@@ -38,6 +52,28 @@ function editable(view) {
       items: s.items.map((i) => ({ code: i.code, included: i.included, scopeNotes: i.scopeNotes })),
     })),
   };
+}
+
+// A draftable text: { key, field, serviceCode?, label }.
+const target = (field, label, serviceCode) => ({ key: serviceCode ? `${field}:${serviceCode}` : field, field, serviceCode, label });
+const readValue = (d, t) => (t.field === 'narrative' ? (d.services.find((s) => s.code === t.serviceCode)?.narrative ?? '') : d.proposal[t.field]);
+const withValue = (d, t, text) => (t.field === 'narrative'
+  ? { ...d, services: d.services.map((s) => (s.code === t.serviceCode ? { ...s, narrative: text } : s)) }
+  : { ...d, proposal: { ...d.proposal, [t.field]: text } });
+
+function SuggestBar({ t, value, busy, hint, onHint, onSuggest, canUndo, onUndo, disabled }) {
+  const working = busy === t.key;
+  return (
+    <div className="suggest-bar">
+      <input type="text" className="suggest-bar__input" value={hint} maxLength={1000} disabled={disabled || Boolean(busy)}
+             placeholder={value.trim() ? 'How should it change? e.g. shorter, mention the review board' : 'Anything to emphasise? (optional)'}
+             aria-label={`Instructions for drafting ${t.label}`} onChange={(e) => onHint(e.target.value)} />
+      <button type="button" className="link-button" disabled={disabled || Boolean(busy)} onClick={onSuggest}>
+        {working ? 'Drafting…' : value.trim() ? 'Rewrite with AI' : 'Draft with AI'}
+      </button>
+      {canUndo && <button type="button" className="link-button" disabled={Boolean(busy)} onClick={onUndo}>Undo</button>}
+    </div>
+  );
 }
 
 export default function OpportunityProposal() {
@@ -54,6 +90,9 @@ export default function OpportunityProposal() {
   const [success, setSuccess] = useState(null);
   const [saving, setSaving] = useState(false);
   const [preview, setPreview] = useState(null);
+  const [busy, setBusy] = useState(null);      // target key being drafted, or 'all'
+  const [hints, setHints] = useState({});      // target key → instructions typed
+  const [undo, setUndo] = useState({});        // target key → text before the last suggestion
 
   const load = useCallback(async ({ initial = false } = {}) => {
     if (initial) setLoading(true);
@@ -105,13 +144,14 @@ export default function OpportunityProposal() {
 
   async function handleSave(e) {
     e.preventDefault();
-    if (!dirty || saving) return;
+    if (!dirty || saving || busy) return;
     setSaving(true); setError(null); setSuccess(null); setConflict(false);
     try {
       const v = await authenticatedFetchJson(url, { method: 'PUT', body: { ...draft, expectedVersion: view.proposal.version } });
       setView(v);
       setDraft(editable(v));
       setPreview(null);
+      setUndo({});
       setSuccess('Proposal saved.');
     } catch (err) {
       if (err.status === 409) setConflict(true);
@@ -130,10 +170,75 @@ export default function OpportunityProposal() {
     }
   }
 
+  // ── AI drafting ───────────────────────────────────────────────
+
+  async function suggest(t) {
+    if (busy) return;
+    const current = readValue(draft, t);
+    setBusy(t.key); setError(null); setSuccess(null);
+    try {
+      const r = await authenticatedFetchJson(`${url}/suggest`, {
+        method: 'POST',
+        body: { field: t.field, serviceCode: t.serviceCode, current, instructions: hints[t.key] || '', draft },
+      });
+      setUndo((u) => ({ ...u, [t.key]: current }));
+      setHints((h) => ({ ...h, [t.key]: '' }));
+      setDraft((d) => withValue(d, t, r.text));
+    } catch (err) {
+      setError(err.message || 'Drafting failed.');
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  function undoSuggest(t) {
+    const previous = undo[t.key];
+    if (previous == null) return;
+    setDraft((d) => withValue(d, t, previous));
+    setUndo((u) => { const next = { ...u }; delete next[t.key]; return next; });
+  }
+
+  async function draftEmpty() {
+    if (busy) return;
+    const byCodeNow = Object.fromEntries(view.services.map((s) => [s.code, s]));
+    // Narratives first, so the summary and approach can build on them.
+    const targets = [
+      ...draft.services
+        .filter((s) => s.included && !byCodeNow[s.code]?.stale && !s.narrative.trim())
+        .map((s) => target('narrative', `the ${byCodeNow[s.code].label} narrative`, s.code)),
+      ...TEXT_FIELDS.filter((f) => !draft.proposal[f.field].trim()).map((f) => target(f.field, f.label)),
+    ];
+    if (!targets.length) { setSuccess('Every section already has text — use Rewrite with AI on a section instead.'); return; }
+    setBusy('all'); setError(null); setSuccess(null);
+    let working = draft;
+    let done = 0;
+    try {
+      for (const t of targets) {
+        const r = await authenticatedFetchJson(`${url}/suggest`, { method: 'POST', body: { field: t.field, serviceCode: t.serviceCode, draft: working } });
+        working = withValue(working, t, r.text);
+        setDraft(working);
+        done += 1;
+      }
+      setSuccess(`Drafted ${done} ${done === 1 ? 'section' : 'sections'}. Review, edit and save.`);
+    } catch (err) {
+      setError(`${err.message || 'Drafting failed.'}${done ? ` (${done} of ${targets.length} sections were drafted.)` : ''}`);
+    } finally {
+      setBusy(null);
+    }
+  }
+
   if (loading) return <div className="spinner" role="status" aria-label="Loading proposal" />;
   if (!view || !draft) {
     return <div className="error-message"><p>{error || 'The proposal is unavailable.'}</p></div>;
   }
+
+  const drafting = view.drafting || { available: false, reason: null };
+  const locked = saving || busy === 'all';
+  const bar = (t, value, disabled) => drafting.available && (
+    <SuggestBar t={t} value={value} busy={busy} hint={hints[t.key] || ''} disabled={disabled}
+                onHint={(v) => setHints((h) => ({ ...h, [t.key]: v }))} onSuggest={() => suggest(t)}
+                canUndo={undo[t.key] != null} onUndo={() => undoSuggest(t)} />
+  );
 
   const byCode = Object.fromEntries(view.services.map((s) => [s.code, s]));
   const g = view.guidance;
@@ -161,6 +266,7 @@ export default function OpportunityProposal() {
         What goes in the proposal. The services Scoping chose and the deliverables the tools selected are here
         and included until you leave them out; leaving something out doesn't change the tools.
         Quantities are set in the tools.
+        {drafting.available && <> <em>Draft with AI</em> writes a first version of any text section from the answers and what's included; you edit, and nothing is saved until you save.</>}
       </p>
 
       {(notices.length > 0 || g.hasNew || g.hasStale) && (
@@ -187,12 +293,13 @@ export default function OpportunityProposal() {
         <div className="proposal-head">
           <div className="form-group" style={{ flex: '1 1 320px', margin: 0 }}>
             <label htmlFor="proposalTitle">Proposal title</label>
-            <input id="proposalTitle" type="text" value={draft.proposal.title} maxLength={300} disabled={saving}
+            <input id="proposalTitle" type="text" value={draft.proposal.title} maxLength={300} disabled={locked}
                    onChange={(e) => setProposalField('title', e.target.value)} />
+            {bar(target('title', 'the title'), draft.proposal.title, locked)}
           </div>
           <div className="form-group" style={{ flex: '0 0 180px', margin: 0 }}>
             <label htmlFor="proposalStatus">Status</label>
-            <select id="proposalStatus" value={draft.proposal.status} disabled={saving} onChange={(e) => setProposalField('status', e.target.value)}>
+            <select id="proposalStatus" value={draft.proposal.status} disabled={locked} onChange={(e) => setProposalField('status', e.target.value)}>
               <option value="Draft">Draft</option>
               <option value="Ready">Ready for the document</option>
             </select>
@@ -200,6 +307,13 @@ export default function OpportunityProposal() {
           <div className="proposal-head__meta muted">
             {includedServices} {includedServices === 1 ? 'service' : 'services'} · {includedItems} {includedItems === 1 ? 'deliverable' : 'deliverables'} included
             {view.proposal.updatedAt && <><br />Saved {formatDateTime(view.proposal.updatedAt)}{view.proposal.updatedByName ? ` by ${view.proposal.updatedByName}` : ''}</>}
+            {drafting.available && (
+              <div style={{ marginTop: 'var(--space-2)' }}>
+                <button type="button" className="cancel-button" onClick={draftEmpty} disabled={saving || Boolean(busy)}>
+                  {busy === 'all' ? 'Drafting…' : 'Draft empty sections with AI'}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </PageCard>
@@ -214,7 +328,7 @@ export default function OpportunityProposal() {
           <PageCard key={s.code} className={`proposal-service${s.included && !info.stale ? '' : ' is-excluded'}`} style={{ marginBottom: 'var(--space-4)' }}>
             <div className="proposal-service__head">
               <label className="proposal-service__pick">
-                <input type="checkbox" checked={s.included} disabled={saving || info.stale} onChange={(e) => setService(s.code, { included: e.target.checked })} />
+                <input type="checkbox" checked={s.included} disabled={locked || info.stale} onChange={(e) => setService(s.code, { included: e.target.checked })} />
                 <span>
                   <strong>{info.label}</strong>
                   {info.isLead && <span className="deliverable-row__category">Lead</span>}
@@ -230,8 +344,8 @@ export default function OpportunityProposal() {
                   </span>
                 )}
                 {info.toolKey && <Link to={`${toolsUrl}/${info.toolKey}`} className="link-button">Adjust in tool</Link>}
-                <button type="button" className="link-button" onClick={() => moveService(si, -1)} disabled={saving || si === 0}>Up</button>
-                <button type="button" className="link-button" onClick={() => moveService(si, 1)} disabled={saving || si === draft.services.length - 1}>Down</button>
+                <button type="button" className="link-button" onClick={() => moveService(si, -1)} disabled={locked || si === 0}>Up</button>
+                <button type="button" className="link-button" onClick={() => moveService(si, 1)} disabled={locked || si === draft.services.length - 1}>Down</button>
               </span>
             </div>
 
@@ -258,7 +372,7 @@ export default function OpportunityProposal() {
                       return (
                         <tr key={i.code} className={i.included ? undefined : 'is-excluded'}>
                           <td style={{ textAlign: 'center' }}>
-                            <input type="checkbox" checked={i.included} disabled={saving || !s.included} aria-label={`Include ${d.name}`}
+                            <input type="checkbox" checked={i.included} disabled={locked || !s.included} aria-label={`Include ${d.name}`}
                                    onChange={(e) => setItem(s.code, i.code, { included: e.target.checked })} />
                           </td>
                           <td>
@@ -271,14 +385,14 @@ export default function OpportunityProposal() {
                           <td className="muted">{d.quantity} {d.unit}{d.quantity === 1 ? '' : 's'}</td>
                           <td>{d.band && <span className={BAND_CLASS[d.band] || 'band-chip'}>{BAND_LABEL[d.band] || d.band}</span>}</td>
                           <td>
-                            <input type="text" value={i.scopeNotes} maxLength={2000} disabled={saving || !s.included || !i.included}
+                            <input type="text" value={i.scopeNotes} maxLength={2000} disabled={locked || !s.included || !i.included}
                                    placeholder="What this covers for this client…" aria-label={`Scope notes for ${d.name}`}
                                    onChange={(e) => setItem(s.code, i.code, { scopeNotes: e.target.value })} />
                           </td>
                           <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
-                            <button type="button" className="link-button" onClick={() => moveItem(s.code, ii, -1)} disabled={saving || ii === 0}>Up</button>
+                            <button type="button" className="link-button" onClick={() => moveItem(s.code, ii, -1)} disabled={locked || ii === 0}>Up</button>
                             {' · '}
-                            <button type="button" className="link-button" onClick={() => moveItem(s.code, ii, 1)} disabled={saving || ii === s.items.length - 1}>Down</button>
+                            <button type="button" className="link-button" onClick={() => moveItem(s.code, ii, 1)} disabled={locked || ii === s.items.length - 1}>Down</button>
                           </td>
                         </tr>
                       );
@@ -296,9 +410,10 @@ export default function OpportunityProposal() {
 
             <div className="form-group" style={{ marginTop: 'var(--space-3)' }}>
               <label htmlFor={`narrative-${s.code}`}>Narrative for {info.label}</label>
-              <textarea id={`narrative-${s.code}`} rows="3" value={s.narrative} maxLength={4000} disabled={saving || !s.included}
+              <textarea id={`narrative-${s.code}`} rows="3" value={s.narrative} maxLength={4000} disabled={locked || !s.included}
                         placeholder="How we'd approach this service for this client — becomes the section introduction."
                         onChange={(e) => setService(s.code, { narrative: e.target.value })} />
+              {bar(target('narrative', `the ${info.label} narrative`, s.code), s.narrative, locked || !s.included || info.stale)}
             </div>
           </PageCard>
         );
@@ -306,31 +421,18 @@ export default function OpportunityProposal() {
 
       <PageCard style={{ marginBottom: 'var(--space-4)' }}>
         <h3 style={{ marginTop: 0 }}>Proposal text</h3>
+        {!drafting.available && drafting.reason && (
+          <p className="muted" style={{ marginTop: 0, fontSize: 'var(--font-size-sm)' }}>{drafting.reason}</p>
+        )}
         <div className="form-stack">
-          <div className="form-group">
-            <label htmlFor="executiveSummary">Executive summary</label>
-            <textarea id="executiveSummary" rows="5" value={draft.proposal.executiveSummary} maxLength={8000} disabled={saving}
-                      placeholder="The situation, what we propose, and why it matters to them."
-                      onChange={(e) => setProposalField('executiveSummary', e.target.value)} />
-          </div>
-          <div className="form-group">
-            <label htmlFor="approach">Approach</label>
-            <textarea id="approach" rows="4" value={draft.proposal.approach} maxLength={8000} disabled={saving}
-                      placeholder="How the engagement runs end to end."
-                      onChange={(e) => setProposalField('approach', e.target.value)} />
-          </div>
-          <div className="form-group">
-            <label htmlFor="assumptions">Assumptions</label>
-            <textarea id="assumptions" rows="3" value={draft.proposal.assumptions} maxLength={8000} disabled={saving}
-                      placeholder="Access, availability, decisions we're relying on."
-                      onChange={(e) => setProposalField('assumptions', e.target.value)} />
-          </div>
-          <div className="form-group">
-            <label htmlFor="timeline">Timeline</label>
-            <textarea id="timeline" rows="3" value={draft.proposal.timeline} maxLength={8000} disabled={saving}
-                      placeholder="Phases, start, duration, milestones."
-                      onChange={(e) => setProposalField('timeline', e.target.value)} />
-          </div>
+          {TEXT_FIELDS.map((f) => (
+            <div className="form-group" key={f.field}>
+              <label htmlFor={f.field}>{f.label}</label>
+              <textarea id={f.field} rows={f.rows} value={draft.proposal[f.field]} maxLength={8000} disabled={locked}
+                        placeholder={f.placeholder} onChange={(e) => setProposalField(f.field, e.target.value)} />
+              {bar(target(f.field, f.label), draft.proposal[f.field], locked)}
+            </div>
+          ))}
         </div>
       </PageCard>
 
@@ -339,8 +441,8 @@ export default function OpportunityProposal() {
           Preview document
         </button>
         <span>
-          {dirty && <button type="button" className="cancel-button" onClick={() => { setDraft(editable(view)); setSuccess(null); }} disabled={saving} style={{ marginRight: 'var(--space-3)' }}>Discard changes</button>}
-          <button type="submit" className="save-button" disabled={!dirty || saving}>{saving ? 'Saving…' : 'Save proposal'}</button>
+          {dirty && <button type="button" className="cancel-button" onClick={() => { setDraft(editable(view)); setUndo({}); setSuccess(null); }} disabled={locked} style={{ marginRight: 'var(--space-3)' }}>Discard changes</button>}
+          <button type="submit" className="save-button" disabled={!dirty || locked || Boolean(busy)}>{saving ? 'Saving…' : 'Save proposal'}</button>
         </span>
       </div>
 

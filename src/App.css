@@ -1176,6 +1176,38 @@ h1, h2, h3, h4 {
 .proposal-document ul { padding-left: var(--space-5); }
 .proposal-document li { margin-bottom: var(--space-2); }
 
+/* ── AI drafting (proposal tab + configuration) ──────────────── */
+.suggest-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+.form-group .suggest-bar__input { width: auto; flex: 1 1 260px; font-size: var(--font-size-sm); }
+.checkbox-inline {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  cursor: pointer;
+  margin: 0 0 var(--space-4);
+}
+.checkbox-inline input[type="checkbox"] { width: auto; margin: 0; flex-shrink: 0; }
+.form-row { display: flex; flex-wrap: wrap; gap: var(--space-4); }
+.form-row > .form-group { flex: 1 1 200px; margin-bottom: 0; }
+.prompt-preview {
+  white-space: pre-wrap;
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+  background: var(--color-accent-tint);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  margin: 0;
+}
+
 /* ── Service chips (services we're pitching) ─────────────────── */
 .service-chips { display: flex; flex-wrap: wrap; gap: var(--space-2); }
 .service-chip {

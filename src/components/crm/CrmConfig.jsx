@@ -67,6 +67,21 @@ export default function CrmConfig() {
           </p>
           <span className="module-card__role">Admin only</span>
         </button>
+
+        <button
+          type="button"
+          className="module-card module-card--link"
+          onClick={() => navigate('/modules/crm/config/ai-drafting')}
+          style={{ textAlign: 'left', cursor: 'pointer', font: 'inherit' }}
+        >
+          <h3>AI Drafting</h3>
+          <p style={{ color: 'var(--color-text-secondary)', margin: '0 0 var(--space-2)' }}>
+            Turn AI drafting on or off for CRM (the opportunity Proposal tab's <em>Draft with AI</em>).
+            The model connection and voice are application-wide, set by an application Admin under
+            Administration → AI Drafting.
+          </p>
+          <span className="module-card__role">Admin only</span>
+        </button>
       </div>
     </PageLayout>
   );

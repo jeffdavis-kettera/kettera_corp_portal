@@ -20,6 +20,9 @@ export const CRM_MODULE = {
   // thousands of companies we swap this for a search-picker.
   companiesApi: '/crm/companies?limit=200&offset=0',
   companyAccessApi: '/crm/config/company-access',
+  // AI drafting switch for this module (API: createModuleAiRouter('CRM')).
+  aiApi: '/modules/crm/ai',
+  aiUsage: 'the opportunity Proposal tab — Draft with AI / Rewrite with AI on every text section, and Draft empty sections with AI',
   roleHelp: {
     BasicUser: 'Basic User — needs company access granted separately in Configuration',
     Admin: 'Admin — sees every company automatically, can manage CRM users',

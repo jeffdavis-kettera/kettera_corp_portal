@@ -60,6 +60,12 @@ export default function Navigation() {
           >
             User Management
           </NavLink>
+          <NavLink
+            to="/ai-drafting"
+            className={({ isActive }) => `nav__link${isActive ? ' is-active' : ''}`}
+          >
+            AI Drafting
+          </NavLink>
         </div>
       )}
 
