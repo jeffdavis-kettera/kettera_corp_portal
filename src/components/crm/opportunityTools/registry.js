@@ -21,6 +21,9 @@ export const OPPORTUNITY_TOOLS = {
   'deliverables-ea-build':         deliverables('deliverables-ea-build'),
   'deliverables-apm-build':        deliverables('deliverables-apm-build'),
   'deliverables-innovation-build': deliverables('deliverables-innovation-build'),
+  'deliverables-ea-embed':         deliverables('deliverables-ea-embed'),
+  'deliverables-apm-embed':        deliverables('deliverables-apm-embed'),
+  'deliverables-innovation-embed': deliverables('deliverables-innovation-embed'),
 };
 
 export const TOOL_STATUS_LABEL = {
